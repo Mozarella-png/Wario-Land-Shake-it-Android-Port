@@ -30,7 +30,7 @@ android {
         cmake {
             // The whole WarioRecomp runtime (and Aurora) builds from the repo's runtime/ folder.
             path = file("../../runtime/CMakeLists.txt")
-            version = "3.22.1"
+            version = "3.31.6"
             // No "targets" here: CMake's default target builds WiiCompiled (the product, libmain.so).
         }
     }
