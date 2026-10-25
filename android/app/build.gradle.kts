@@ -21,7 +21,9 @@ android {
         externalNativeBuild {
             cmake {
                 // Translated shards compile in parallel; CI sets WARIO_JOBS for the runner size.
-                arguments += listOf("-DMKW_TRANSLATED_COMPILE_JOBS=" + (System.getenv("WARIO_JOBS") ?: "2"))
+                // The runtime only builds in Release. AGP passes its own CMAKE_BUILD_TYPE first, so this later -D wins.
+                arguments += listOf("-DCMAKE_BUILD_TYPE=Release",
+                    "-DMKW_TRANSLATED_COMPILE_JOBS=" + (System.getenv("WARIO_JOBS") ?: "2"))
             }
         }
     }
