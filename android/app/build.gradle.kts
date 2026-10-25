@@ -22,7 +22,10 @@ android {
             cmake {
                 // Translated shards compile in parallel; CI sets WARIO_JOBS for the runner size.
                 // The runtime only builds in Release. AGP passes its own CMAKE_BUILD_TYPE first, so this later -D wins.
+                // Aurora cross-compiles Dawn from google/dawn by default ("vendor"), and that tag 404s.
+                // "package" downloads the prebuilt Dawn for android-aarch64 with a pinned SHA-256.
                 arguments += listOf("-DCMAKE_BUILD_TYPE=Release",
+                    "-DAURORA_DAWN_PROVIDER=package",
                     "-DMKW_TRANSLATED_COMPILE_JOBS=" + (System.getenv("WARIO_JOBS") ?: "2"))
             }
         }
