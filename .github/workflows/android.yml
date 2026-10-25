@@ -97,9 +97,11 @@ jobs:
 
       - name: Get the SDL3 Java glue (matches the SDL3 the runtime builds)
         run: |
-          curl -fL -o sdl.tar.gz "https://github.com/libsdl-org/SDL/archive/refs/tags/release-${SDL_VERSION}.tar.gz"
-          tar xzf sdl.tar.gz
-          SRC="SDL-release-${SDL_VERSION}/android-project/app/src/main/java/org/libsdl/app"
+          # Extract outside the workspace: SDL's own gradle-wrapper.jar would fail setup-gradle's validation.
+          mkdir -p /tmp/sdl
+          curl -fL -o /tmp/sdl/sdl.tar.gz "https://github.com/libsdl-org/SDL/archive/refs/tags/release-${SDL_VERSION}.tar.gz"
+          tar xzf /tmp/sdl/sdl.tar.gz -C /tmp/sdl
+          SRC="/tmp/sdl/SDL-release-${SDL_VERSION}/android-project/app/src/main/java/org/libsdl/app"
           mkdir -p android/app/src/main/java/org/libsdl
           cp -r "$SRC" android/app/src/main/java/org/libsdl/
 
