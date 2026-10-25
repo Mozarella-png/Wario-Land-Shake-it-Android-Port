@@ -29,11 +29,21 @@ jobs:
             exit 1
           fi
 
-      - name: Download and check main.dol
+            - name: Download and check main.dol
         env:
           WARIO_DATA_URL: ${{ secrets.WARIO_DATA_URL }}
         run: |
-          curl -fL --retry 3 -o /tmp/game.zip "$WARIO_DATA_URL"
+          set -e
+          URL="$WARIO_DATA_URL"
+          if [[ "$URL" == *drive.google.com* ]]; then
+            ID=$(echo "$URL" | sed -E 's/.*[?&]id=([^&]+).*/\1/; s#.*/d/([^/?]+).*#\1#')
+            URL="https://drive.usercontent.google.com/download?id=${ID}&export=download&confirm=t"
+          fi
+          curl -fL --retry 3 -o /tmp/game.zip "$URL"
+          if ! unzip -tq /tmp/game.zip > /dev/null; then
+            echo "::error::La descarga no es un zip válido (Drive devolvió una página HTML). Revisa que el archivo esté compartido como 'Cualquiera con el enlace'."
+            exit 1
+          fi
           mkdir -p /tmp/gamedata
           unzip -q /tmp/game.zip -d /tmp/gamedata
           DOL=$(find /tmp/gamedata -path '*/sys/main.dol' | head -n 1)
