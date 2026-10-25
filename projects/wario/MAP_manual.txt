@@ -1,0 +1,24 @@
+# Nombres verificados a mano (direccion nombre  # como)
+803bf6d8 AIRegisterDMACallback  # intercambia -0x2a30(r13) con interrupciones desactivadas
+803bf7ac AIGetDMABytesLeft  # lee CC00503A
+80416bf4 OSSetArenaLo  # OSInit con (stack_end+0x1f)&~0x1f
+80416bdc OSSetArenaHi  # OSInit con 0x81700000
+80401650 GXSetVtxDesc  # switch attr<=0x19 sobre gxData vcdLo/Hi (0x14/0x18); 80401850 es su cola
+80402ab0 GXWaitDrawDone  # OSSleepThread sobre FinishQueue (-0x2728) hasta DrawDone (-0x2720)
+80417fd8 OSReport  # varargs: guarda f1-f8 si cr1, va_list y llama a vprintf
+8041e8ec OSResumeThread  # 11 llamadas bl; tamano 0x298 identico a base (0x8041E7AC es otra funcion extra de este SDK)
+803afb4c WPADInit  # registra OSRegisterShutdownFunction una vez, WUDInit y luego WPADInitSub
+803af93c WPADInitSub  # lee SC (sensor, motor, altavoz), crea alarma periodica, OSRegisterVersion
+8040b5f8 KPADRead  # (chan, buf, len): WPADProbe + WPADSetSamplingCallback; el juego la llama por cuadro (0x8000B7B4)
+8040bd10 KPADInit  # llamada desde la inicializacion de mandos del juego (0x8000B598)
+803f43f4 DSPCheckMailToDSP  # lhz CC005000, bit 15
+803f4404 DSPCheckMailFromDSP  # lhz CC005004, bit 15
+803f4414 DSPReadMailFromDSP  # lhz CC005004/5006
+803c2060 __AXDSPInitCallback  # 0xC, igual que la base
+803c206c __AXDSPResumeCallback  # 0x54, igual que la base
+803c20c0 __AXDSPDoneCallback  # 0x10, igual que la base
+803c20d0 __AXDSPRequestCallback  # 4 bytes (blr), igual que la base
+803c20d4 __AXOutInitDSP  # unica llamada a DSPInit y DSPAddTask
+80412fb0 NANDSafeClose  # 1 arg (fileInfo), comprueba +0x8a==3 e ISFS_Close; la firma lo confundia con NANDSafeOpenAsync
+80413134 NANDSafeOpenAsync  # li r10,0 ; b nandSafeOpenAsync (7 args); el juego la llama en 0x8013EAC8 al guardar
+8041276c NANDGetLengthAsync  # nandIsInitialized + ISFS_GetFileStatsAsync, longitud en block+0x74

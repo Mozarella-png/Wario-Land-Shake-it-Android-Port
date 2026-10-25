@@ -1,0 +1,57 @@
+# base_addr	wario_addr	nombre	como se verifico
+8056DB88	806200B8	InterruptHandlerTable	__OSSetInterruptHandler lwz -0x25e8(r13)
+80505D18	80619518	DefaultThread	__OSThreadInit lis/addi
+80506030	80619830	RunQueue	SelectThread / __OSThreadInit (DefaultThread+0x318)
+80506130	80619930	IdleContext	RunQueue+0x100 (misma disposicion que la base)
+8056D2A0	8061D630	SwitchThreadCallback	__OSThreadInit lwz -0x5070(r13)
+8056DBA8	806200D8	Reschedule	SelectThread lwz -0x25c8(r13)
+8056DBAC	806200DC	RunQueueHint	__OSThreadInit stw -0x25c4(r13)
+8056DBB0	806200E0	RunQueueBits	SelectThread lwz -0x25c0(r13)
+8056DD00	8061FAF8	VI IsInitialized	desplazamiento VI.c (+0x4678 sobre r13), verificado con CurrTvMode/retraceCount
+8056DD70	8061FB68	VI CurrTvMode	VIGetTvFormat lwz -0x2b38(r13)
+8056DDAC	8061FBA4	VI retraceCount	VIGetRetraceCount lwz -0x2afc(r13)
+8056DD88	8061FB80	VI retraceQueue	VIWaitForRetrace addi r13,-0x2b20
+8056DD0C	8061FB04	VI dimming flag	desplazamiento VI.c
+8056DD80	8061FB78	VI PreCB	desplazamiento VI.c
+8056DD7C	8061FB74	VI PostCB	desplazamiento VI.c
+8056DD68	8061FB60	VI CurrBufAddr	desplazamiento VI.c
+8050BAF4	805ADD74	VI HorVer.DispSizeX	VISetNextFrameBuffer: HorVer=805ADD70, bufAddr en +0x30 (base 8050BB20)
+8050BAF6	805ADD76	VI HorVer.DispSizeY	HorVer+6
+8050BB02	805ADD82	VI HorVer.FBSizeX	HorVer+0x12
+8050BB0C	805ADD8C	VI HorVer.PanSizeY	HorVer+0x1C
+8050BB20	805ADDA0	VI HorVer.bufAddr	VISetNextFrameBuffer stw +0x30
+805215A0	80602900	GX gxData	valor de __GXData (r2-0x988) en el DOL
+80521520	80602880	GX FifoObj	gxData-0x80 (igual que la base)
+80521BC4	80602F24	GX CPUFifo	GXSetCPUFifo addi 0x2f24
+80521BA0	80602F00	GX GPFifo	__GXFifoInit addi 0x2f00
+8056DF90	8061FF58	GX CPUFifoReady	GXSetCPUFifo stb -0x2748(r13)
+8056DF91	8061FF59	GX GPFifoReady	__GXFifoInit stb -0x2747(r13)
+8056DFA4	8061FF6C	GX __GXCurrentThread	__GXFifoInit stw -0x2734(r13)
+8056DFA0	8061FF68	GX GXOverflowSuspendInProgress	__GXFifoInit stw -0x2738(r13)
+8056DFB0	8061FF78	GX FinishQueue	desplazamiento GX (+0x4848 sobre r13)
+8050B690	80602450	DVD WaitingQueue[4]	__DVDClearWaitingQueue addi 0x2450
+8056DC7C	8061FE70	DVD DVDInitialized	DVDInit lwz/stw -0x2830(r13)
+8056DC84	8061FE78	DVD Prepared	__DVDPrepareReset stw 0 y luego 1 en -0x2828(r13)
+8056DCC0	8061FEB0	DVD executing	__DVDPrepareReset lwz -0x27f0(r13) -> puntero a bloque de comando
+8056DCE5	8061FED5	DVD DVDLowInitCalled	DVDLowInit lbz/stb -0x27cb(r13)
+80576720	80639040	OS ArenaLo por defecto	OSInit: (0x80639030+0x1f)&~0x1f
+80576098	80627918	GX __GXData (puntero)	GXInit lwz -0x988(r2)
+8056DF48	8061FDF0	DSP __DSP_init_flag	DSPCheckInit lwz -0x28b0(r13)
+8056DF50	8061FDF8	DSP __DSP_rude_task_pending	DSPAssertTask stw -0x28a8(r13)
+8056DF54	8061FDFC	DSP __DSP_rude_task	DSPAssertTask stw -0x28a4(r13)
+8056DF5C	8061FE04	DSP __DSP_last_task	DSPInit stw -0x289c(r13)
+8056DF60	8061FE08	DSP __DSP_first_task	DSPInit stw -0x2898(r13)
+8056DF64	8061FE0C	DSP __DSP_curr_task	DSPAssertTask lwz -0x2894(r13)
+8056DDD0	8061FC38	AI __AI_init_flag	AIInit lwz/stw -0x2a68(r13)
+8056DDD4	8061FC3C	AI __AID_Active	desplazamiento ai.c (+0x46E8), verificado con init_flag/AID_Callback
+8056DE04	8061FC6C	AI __CallbackStack	AIInit stw -0x2a34(r13)
+8056DE08	8061FC70	AI __AID_Callback	AIRegisterDMACallback (0x803BF6D8) lwz/stw -0x2a30(r13)
+8056DFB8	8061FF80	GX DrawDone flag	GXWaitDrawDone lbz -0x2720(r13)
+8050B8A0	80602660	DVD dvdContexts[4]	newContext (0x803FC2D8): base de contextos de 0x20 con marca 0xFEEBDAED
+8056DCE0	8061FED0	DVD freeDvdContext	newContext lwz -0x27d0(r13)
+8056DCE4	8061FED4	DVD dvdContextsInited	byte anterior a DVDLowInitCalled (-0x27cb), misma disposicion que la base
+8050FD00	805B7480	AX __AXDSPTask (DSPTaskInfo)	__AXOutInitDSP 0x803C20D4: r30 lis/addi, campos +0xC/+0x18 escritos antes de DSPAddTask
+804B7780	804E40C0	AX axDspSlave (microcodigo IRAM)	__AXOutInitDSP: stw r29,0xC(task) iram_mmem_addr
+8050FD60	805B74E0	AX __AXDramImage	__AXOutInitDSP: stw r11,0x18(task) dram_mmem_addr (task+0x60 como en la base)
+8056DD8C	8061FB84	VI retraceQueue.tail	retraceQueue+4 (solo diagnostico del watchdog)
+80551AA0	80551AA0	Wario THPPlayer ActivePlayer (direccion propia de Wario, no de la base)	THPPlayerGetState 0x8029E4BC lis/addi + lbz 0xa4

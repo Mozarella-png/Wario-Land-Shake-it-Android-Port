@@ -1,0 +1,460 @@
+extern "C" unsigned g_gameAudit[8];
+extern "C" unsigned g_gameGameClear;
+extern "C" int g_gameSweepDump;
+#include "map_sweep.h"
+#include "abi_bridge.h"
+#include "memory.h"
+#include "ppc_runtime.h"
+#include "runtime_log.h"
+
+#include <algorithm>
+#include <chrono>
+#include <cmath>
+#include <cstdlib>
+#include <cstdio>
+#include <fstream>
+#include <iostream>
+#include <string>
+#include <vector>
+
+namespace GameMapSweep {
+namespace {
+using Clock = std::chrono::steady_clock;
+void RunMathSelfTest(CpuContext* cpu) {
+    CpuContext a = *cpu;
+    a.gpr[3] = 0;
+    a.gpr[4] = 64;
+    InvokeIndirectCpu(0x801A5634, &a);  // __memAlloc(HEAP_MAIN, 64)  // WARIO-TODO: falta __memAlloc
+    const uint32_t base = a.gpr[3];
+    if (!base || !Memory::Contains(base, 64)) return;
+    auto call = [&](uint32_t fn, std::initializer_list<double> f, uint32_t r3 = 0, uint32_t r4 = 0) {
+        CpuContext c = *cpu;
+        c.gpr[3] = r3; c.gpr[4] = r4;
+        int i = 1;
+        for (double d : f) c.fpr[i++].d = d;
+        InvokeIndirectCpu(fn, &c);
+        return c.fpr[1].d;
+    };
+    for (double d : {0.0, 0.5, 1.5707963, 2.0, 3.1415927, 4.712389, -1.5707963, 6.0}) {
+        RT_LOGF(RT_TAG_RUNTIME, "[mathtest] x=%g sin %g (host %g) cos %g (host %g) floor %g fmod2 %g\n", d, call(0x8031617C, {d}), std::sin(d),
+                call(0x80315C74, {d}), std::cos(d), call(0x80315D48, {d}), call(0x80261BB4, {d, 2.0}));  // WARIO-TODO: falta fmod
+    }
+    for (double deg : {0.0, 45.0, 90.0, 135.0, 180.0, 225.0, 270.0, 315.0, -90.0, 450.0}) {
+        call(0x8019BA28, {deg}, base, base + 4);  // sincosf(angle, &s, &c)  // WARIO-TODO: falta sincosf
+        RT_LOGF(RT_TAG_RUNTIME, "[mathtest] deg=%g sincosf s %g c %g | reviseAngle %g | angleABf(0,0,sin,-cos) %g\n", deg, Memory::ReadFloat32(base),
+                Memory::ReadFloat32(base + 4), call(0x8019B7A8, {deg}),  // WARIO-TODO: falta reviseAngle
+                call(0x8019B874, {0.0, 0.0, std::sin(deg * 3.14159265 / 180), -std::cos(deg * 3.14159265 / 180)}));  // WARIO-TODO: falta angleABf
+    }
+}
+
+void RunMtxSelfTest(CpuContext* cpu) {
+    CpuContext a = *cpu;
+    a.gpr[3] = 0;
+    a.gpr[4] = 1024;
+    InvokeIndirectCpu(0x801A5634, &a);  // __memAlloc(HEAP_MAIN, 1024)  // WARIO-TODO: falta __memAlloc
+    const uint32_t base = a.gpr[3];
+    if (!base || !Memory::Contains(base, 1024)) {
+        RT_LOGF(RT_TAG_RUNTIME, "[mtxtest] alloc failed\n");
+        return;
+    }
+    auto put = [&](uint32_t off, const float* v, int n) { for (int i = 0; i < n; ++i) Memory::WriteFloat32(base + off + i * 4, v[i]); };
+    auto get = [&](uint32_t off, float* v, int n) { for (int i = 0; i < n; ++i) v[i] = Memory::ReadFloat32(base + off + i * 4); };
+    auto call = [&](uint32_t fn, uint32_t r3, uint32_t r4, uint32_t r5, uint32_t r6, std::initializer_list<double> f) {
+        CpuContext c = *cpu;
+        c.gpr[3] = r3; c.gpr[4] = r4; c.gpr[5] = r5; c.gpr[6] = r6;
+        int i = 1;
+        for (double d : f) c.fpr[i++].d = d;
+        InvokeIndirectCpu(fn, &c);
+    };
+    int bad = 0;
+    auto cmp = [&](const char* name, uint32_t off, const float* exp, int n) {
+        float got[16] = {};
+        get(off, got, n);
+        float md = 0, mx = 1;
+        for (int i = 0; i < n; ++i) { md = std::max(md, std::fabs(got[i] - exp[i])); mx = std::max(mx, std::fabs(exp[i])); }
+        const bool ok = md <= 1e-3f * mx;
+        bad += !ok;
+        RT_LOGF(RT_TAG_RUNTIME, "[mtxtest] %s %s maxdiff=%g got=[%g %g %g %g] exp=[%g %g %g %g]\n", ok ? "ok      " : "MISMATCH", name, md,
+                got[0], got[1], got[2], got[3], exp[0], exp[1], exp[2], exp[3]);
+    };
+    const uint32_t A = 0x000, B = 0x040, R = 0x080, V = 0x0C0, VO = 0x0D0, CAM = 0x100, UP = 0x110, TGT = 0x120, M4 = 0x140;
+    const float ma[12] = {0.8f, 0.1f, -0.3f, 5.f, 0.2f, 0.9f, 0.4f, -7.f, -0.1f, 0.3f, 1.1f, 2.f};
+    const float mb[12] = {1.2f, -0.4f, 0.5f, 3.f, 0.3f, 0.7f, -0.2f, 11.f, 0.6f, 0.1f, 0.9f, -4.f};
+    put(A, ma, 12); put(B, mb, 12);
+    float e[16] = {};
+    // Concat
+    for (int i = 0; i < 3; ++i) for (int j = 0; j < 4; ++j) { float v = j == 3 ? ma[i * 4 + 3] : 0; for (int k = 0; k < 3; ++k) v += ma[i * 4 + k] * mb[k * 4 + j]; e[i * 4 + j] = v; }
+    call(0x80410A98, base + A, base + B, base + R, 0, {});
+    cmp("PSMTXConcat", R, e, 12);
+    // Inverse
+    {
+        const float* m = ma;
+        float c00 = m[5] * m[10] - m[6] * m[9], c01 = m[2] * m[9] - m[1] * m[10], c02 = m[1] * m[6] - m[2] * m[5];
+        float c10 = m[6] * m[8] - m[4] * m[10], c11 = m[0] * m[10] - m[2] * m[8], c12 = m[2] * m[4] - m[0] * m[6];
+        float c20 = m[4] * m[9] - m[5] * m[8], c21 = m[1] * m[8] - m[0] * m[9], c22 = m[0] * m[5] - m[1] * m[4];
+        const float det = m[0] * c00 + m[1] * c10 + m[2] * c20;
+        const float r[9] = {c00 / det, c01 / det, c02 / det, c10 / det, c11 / det, c12 / det, c20 / det, c21 / det, c22 / det};
+        for (int i = 0; i < 3; ++i) { for (int j = 0; j < 3; ++j) e[i * 4 + j] = r[i * 3 + j]; e[i * 4 + 3] = -(r[i * 3] * m[3] + r[i * 3 + 1] * m[7] + r[i * 3 + 2] * m[11]); }
+        call(0x80410B64, base + A, base + R, 0, 0, {});
+        cmp("PSMTXInverse", R, e, 12);
+    }
+    // MultVec
+    {
+        const float v[3] = {3.f, -2.f, 7.f};
+        put(V, v, 3);
+        for (int i = 0; i < 3; ++i) e[i] = ma[i * 4] * v[0] + ma[i * 4 + 1] * v[1] + ma[i * 4 + 2] * v[2] + ma[i * 4 + 3];
+        call(0x804116A0, base + A, base + V, base + VO, 0, {});
+        cmp("PSMTXMultVec", VO, e, 3);
+        const float cr[3] = {v[1] * 4.f - v[2] * 0.5f, v[2] * 1.f - v[0] * 4.f, v[0] * 0.5f - v[1] * 1.f};
+        const float w[3] = {1.f, 0.5f, 4.f};
+        put(R, w, 3);
+        call(0x804119E0, base + V, base + R, base + VO, 0, {});
+        const float ce[3] = {v[1] * w[2] - v[2] * w[1], v[2] * w[0] - v[0] * w[2], v[0] * w[1] - v[1] * w[0]};
+        (void)cr;
+        cmp("PSVECCrossProduct", VO, ce, 3);
+        call(0x80411938, base + V, base + VO, 0, 0, {});
+        const float len = std::sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]);
+        const float ne[3] = {v[0] / len, v[1] / len, v[2] / len};
+        cmp("PSVECNormalize", VO, ne, 3);
+    }
+    // LookAt
+    {
+        const float cam[3] = {10.f, 20.f, 830.f}, up[3] = {0.f, 1.f, 0.f}, tgt[3] = {10.f, 20.f, 30.f};
+        put(CAM, cam, 3); put(UP, up, 3); put(TGT, tgt, 3);
+        float look[3] = {cam[0] - tgt[0], cam[1] - tgt[1], cam[2] - tgt[2]};
+        auto norm = [](float* v) { const float l = std::sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]); v[0] /= l; v[1] /= l; v[2] /= l; };
+        norm(look);
+        float right[3] = {up[1] * look[2] - up[2] * look[1], up[2] * look[0] - up[0] * look[2], up[0] * look[1] - up[1] * look[0]};
+        norm(right);
+        const float u[3] = {look[1] * right[2] - look[2] * right[1], look[2] * right[0] - look[0] * right[2], look[0] * right[1] - look[1] * right[0]};
+        const float* rows[3] = {right, u, look};
+        for (int i = 0; i < 3; ++i) { for (int j = 0; j < 3; ++j) e[i * 4 + j] = rows[i][j]; e[i * 4 + 3] = -(rows[i][0] * cam[0] + rows[i][1] * cam[1] + rows[i][2] * cam[2]); }
+        call(0x80411308, base + R, base + CAM, base + UP, base + TGT, {});
+        cmp("C_MTXLookAt", R, e, 12);
+    }
+    // Trans / Scale / RotRad(y)
+    {
+        call(0x80411164, base + R, 0, 0, 0, {12.5, -34.25, 800.0});
+        const float te[12] = {1, 0, 0, 12.5f, 0, 1, 0, -34.25f, 0, 0, 1, 800.f};
+        cmp("PSMTXTrans", R, te, 12);
+        call(0x804111E4, base + R, 0, 0, 0, {2.0, 3.0, 0.5});
+        const float se[12] = {2, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0.5f, 0};
+        cmp("PSMTXScale", R, se, 12);
+        const double ang = 0.6;
+        call(0x80410F0C, base + R, 'y', 0, 0, {ang});
+        const float c = std::cos(static_cast<float>(ang)), sn = std::sin(static_cast<float>(ang));
+        const float re[12] = {c, 0, sn, 0, 0, 1, 0, 0, -sn, 0, c, 0};
+        cmp("PSMTXRotRad(y)", R, re, 12);
+    }
+    // Ortho (4x4): t,b,l,r,n,f
+    {
+        call(0x8041187C, base + M4, 0, 0, 0, {143.0, -143.0, -250.0, 250.0, 0.0, 10000.0});
+        const float oe[16] = {2.f / 500.f, 0, 0, 0, 0, 2.f / 286.f, 0, 0, 0, 0, -1.f / 10000.f, -1.f, 0, 0, 0, 1};
+        float tmp[16] = {2.f / 500.f, 0, 0, 0, 0, 2.f / 286.f, 0, 0, 0, 0, -1.f / 10000.f, -0.f, 0, 0, 0, 1};
+        (void)tmp;
+        float got[16];
+        get(M4, got, 16);
+        const float exp[16] = {oe[0], 0, 0, 0, 0, oe[5], 0, 0, 0, 0, oe[10], -0.f, 0, 0, 0, 1};
+        RT_LOGF(RT_TAG_RUNTIME, "[mtxtest] C_MTXOrtho raw: %g %g %g %g | %g %g %g %g | %g %g %g %g | %g %g %g %g (expect m00=%g m11=%g m22=%g m23=%g)\n",
+                got[0], got[1], got[2], got[3], got[4], got[5], got[6], got[7], got[8], got[9], got[10], got[11], got[12], got[13], got[14], got[15],
+                exp[0], exp[5], exp[10], -0.f);
+    }
+    RT_LOGF(RT_TAG_RUNTIME, "[mtxtest] DONE mismatches=%d\n", bad);
+}
+
+
+// US0 seqSetSeq (0x8017B3C8) stores seq/map/entry; seq_gameInit reads gp->mapName at +0x44.
+constexpr uint32_t kNowSeq = 0x80001888 /* WARIO-QUARANTINE: base 0x8056D0D8 sin verificar */, kNextSeq = 0x80001890 /* WARIO-QUARANTINE: base 0x8056D0DC sin verificar */, kGp = 0x80001898 /* WARIO-QUARANTINE: base 0x8056D198 sin verificar */;
+
+struct Sweep {
+    bool enabled = false, pending = false, changed = false, sampling = false;
+    bool startOnly = false;  // start_map.txt: one warp for the player, no sampling, no exits
+    int startGsw0 = -1;
+    std::vector<std::string> maps;
+    size_t next = 0;
+    uint32_t buffer = 0, firstFrame = 0;
+    int dwellSeconds = 3;
+    Clock::time_point started = Clock::now(), requested{}, stable{};
+
+    Sweep() {
+        const char* path = std::getenv("GAME_MAP_SWEEP_FILE");
+        if (!path || !*path) {
+            // start_map.txt next to the exe: "<map> [gsw0]". Once the player is in any map, warp there once and delete
+            // the file (a test shortcut; saving afterwards keeps the story value it sets).
+            std::ifstream start("start_map.txt");
+            std::string map;
+            if (start >> map && map.size() < 32 && map.find_first_not_of("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_") == std::string::npos) {
+                if (!(start >> startGsw0)) startGsw0 = -1;
+                enabled = startOnly = true;
+                maps.push_back(map);
+                RT_LOGF(RT_TAG_RUNTIME, "[start] will warp to %s (gsw0 %d) once a map is loaded\n", map.c_str(), startGsw0);
+            }
+            start.close();
+            if (startOnly) std::remove("start_map.txt");
+            return;
+        }
+        enabled = true;
+        std::ifstream in(path);
+        std::string name;
+        while (std::getline(in, name)) {
+            if (!name.empty() && name.back() == '\r') name.pop_back();
+            if (name.empty() || name.size() >= 32 || name.find_first_not_of("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_") != std::string::npos) {
+                RT_LOGF(RT_TAG_RUNTIME, "[sweep] invalid-map-list\n");
+                Finish(3);
+            }
+            maps.push_back(name);
+        }
+        if (!in.eof() || maps.empty()) {
+            RT_LOGF(RT_TAG_RUNTIME, "[sweep] unreadable-or-empty-map-list\n");
+            Finish(3);
+        }
+        if (const char* value = std::getenv("GAME_MAP_SWEEP_SECONDS")) {
+            const int seconds = std::atoi(value);
+            if (seconds >= 1 && seconds <= 60) dwellSeconds = seconds;
+        }
+        RT_LOGF(RT_TAG_RUNTIME, "[sweep] ready %zu maps dwell=%d\n", maps.size(), dwellSeconds);
+    }
+
+    [[noreturn]] static void Finish(int code) {
+        std::cerr.flush();
+        std::fflush(nullptr);
+        std::_Exit(code);
+    }
+
+    static int Gsw0For(const std::string& map) {
+        static const auto table = [] {
+            std::vector<std::pair<std::string, int>> t;
+            if (const char* path = std::getenv("GAME_SWEEP_GSW0_TABLE")) {
+                std::ifstream in(path);
+                std::string prefix;
+                int value = 0;
+                while (in >> prefix) {
+                    if (prefix[0] == '#') { std::getline(in, prefix); continue; }
+                    if (in >> value) t.emplace_back(prefix, value);
+                }
+                RT_LOGF(RT_TAG_RUNTIME, "[sweep] gsw0 table %s: %zu entries\n", path, t.size());
+            }
+            return t;
+        }();
+        size_t best = 0;
+        int value = -1;
+        for (const auto& [prefix, v] : table)
+            if (prefix.size() > best && map.compare(0, prefix.size(), prefix) == 0) best = prefix.size(), value = v;
+        if (value < 0)
+            if (const char* g0 = std::getenv("GAME_SWEEP_GSW0")) value = std::atoi(g0);
+        return value;
+    }
+
+    static std::string CurrentMap() {
+        uint32_t gp = 0;
+        if (!Memory::TryRead32(kGp, gp) || gp < 0x80004000 || !Memory::Contains(gp, 0x64)) return {};  // WARIO-TODO: falta memcpy
+        std::string name;
+        for (uint32_t i = 0; i < 32; ++i) {
+            const char c = static_cast<char>(Memory::Read8(gp + 0x44 + i));
+            if (!c) return name;
+            name += c;
+        }
+        return {};
+    }
+
+    static bool EffectsReady() {
+        uint32_t effects = 0, pending = 0, ready = 0, data = 0, a = 0, b = 0;
+        Memory::TryRead32(0x8056CFB0, effects);
+        if (!effects || !Memory::Contains(effects, 16)) return false;
+        Memory::TryRead32(effects + 8, pending);
+        Memory::TryRead32(effects + 12, ready);
+        Memory::TryRead32(0x8056D804, data);  // effSync's final check: r13-0x771C.
+        if (!pending || !ready || !data || !Memory::Contains(data, 20)) return false;
+        Memory::TryRead32(data + 12, a);
+        Memory::TryRead32(data + 16, b);
+        return a && b;
+    }
+
+    void Tick(CpuContext* cpu, uint32_t frames) {
+        if (!enabled || !cpu) return;
+        uint32_t now = 0, after = 0;
+        if (!Memory::TryRead32(kNowSeq, now) || !Memory::TryRead32(kNextSeq, after)) return;
+        const auto time = Clock::now();
+        static Clock::time_point holdUntil{};
+        if (!pending) {
+            if (now != 2 || after != 2 || CurrentMap().empty() || (!buffer && !EffectsReady())) {
+                if (!startOnly && time - started > std::chrono::seconds(90)) {
+                    RT_LOGF(RT_TAG_RUNTIME, "[sweep] boot-timeout seq=%u next=%u\n", now, after);
+                    Finish(2);
+                }
+                return;
+            }
+            if (next == maps.size()) {
+                if (time < holdUntil) return;  // the last map's screenshot needs the window too
+                RT_LOGF(RT_TAG_RUNTIME, "[sweep] complete\n");
+                Finish(0);
+            }
+            if (!buffer) {
+                CpuContext call = *cpu;
+                call.gpr[3] = 0;  // __memAlloc(HEAP_MAIN, 64), persistent across map changes.
+                call.gpr[4] = 64;
+                InvokeIndirectCpu(0x801A5634, &call);  // WARIO-TODO: falta __memAlloc
+                buffer = call.gpr[3];
+                if (!buffer || !Memory::Contains(buffer, 64)) {
+                    RT_LOGF(RT_TAG_RUNTIME, "[sweep] allocation-failed\n");
+                    Finish(3);
+                }
+            }
+            { static bool mathDone = false; if (!mathDone && std::getenv("GAME_MATH_SELFTEST")) { mathDone = true; RunMathSelfTest(cpu); } }
+            { static bool mtxDone = false; if (!mtxDone && std::getenv("GAME_MTX_SELFTEST")) { mtxDone = true; RunMtxSelfTest(cpu); } }
+            if (time < holdUntil) return;
+            const auto& name = maps[next++];
+            for (uint32_t i = 0; i < 32; ++i) Memory::Write8(buffer + i, i < name.size() ? name[i] : 0);
+            pending = true;
+            changed = sampling = false;
+            requested = time;
+            RT_LOGF(RT_TAG_RUNTIME, "[sweep] attempt %s\n", name.c_str());
+            if (const int g0 = startOnly ? startGsw0 : Gsw0For(name); g0 >= 0) {  // story progress (gp->gsw0) the map scripts branch on
+                uint32_t gp = 0;
+                if (Memory::TryRead32(kGp, gp) && Memory::Contains(gp, 0x144)) Memory::Write32(gp + 0x140, uint32_t(g0));
+            }
+            if (const char* g1 = std::getenv("GAME_SWEEP_GSW1")) {  // Pit floor (gp->gsw[1], u8): chest rooms need 9,19.. / 109,119..
+                uint32_t gp = 0;
+                if (Memory::TryRead32(kGp, gp) && Memory::Contains(gp, 0x546)) Memory::Write8(gp + 0x545, uint8_t(std::atoi(g1)));
+            }
+            CpuContext call = *cpu;
+            call.gpr[3] = 3;  // seqSetSeq(SEQ_MAPCHANGE, mapName, nullptr).
+            call.gpr[4] = buffer;
+            call.gpr[5] = 0;
+            InvokeIndirectCpu(0x8017B3C8, &call);  // WARIO-TODO: falta seqSetSeq
+            if (startOnly) enabled = false;  // the game takes it from here
+            return;
+        }
+        const auto& name = maps[next - 1];
+        changed = changed || now == 3;
+        if (changed && now == 2 && after == 2) {
+            const std::string actual = CurrentMap();
+            if (actual == name) {
+                if (!sampling) {
+                    stable = time;
+                    firstFrame = frames;
+                    sampling = true;
+                    for (unsigned& c : g_gameAudit) c = 0;
+                    RT_LOGF(RT_TAG_RUNTIME, "[sweep] loaded %s\n", name.c_str());
+                }
+                {
+                    static const char* dumpMap = std::getenv("GAME_SWEEP_DUMP");
+                    static const unsigned dumpAt = [] { const char* e = std::getenv("GAME_SWEEP_DUMP_FRAME"); return e ? unsigned(std::atoi(e)) : 200u; }();
+                    const unsigned rel = frames - firstFrame;
+                    g_gameSweepDump = (dumpMap && name == dumpMap && rel >= dumpAt && rel < dumpAt + 2) ? 1 : 0;
+                }
+                {
+                    static const bool wpadLog = std::getenv("GAME_SWEEP_WPAD") != nullptr;
+                    uint32_t wp = 0;
+                    if (wpadLog && (frames - firstFrame) % 60 == 0 && Memory::TryRead32(0x80574F20u - 0x7D68u, wp) && Memory::Contains(wp, 0x9DC8)) {
+                        const uint32_t st = wp + 0x6C;
+                        RT_LOGF(RT_TAG_RUNTIME, "[wpad] flags %08X pointing %.3f,%.3f kpad pos %.3f,%.3f dpd %u hold %08X\n",
+                                Memory::Read32(wp), Memory::ReadFloat32(wp + 0x4C), Memory::ReadFloat32(wp + 0x50),
+                                Memory::ReadFloat32(st + 0x20), Memory::ReadFloat32(st + 0x24), Memory::Read8(st + 0x5E), Memory::Read32(st));
+                    }
+                }
+                if (time - stable >= std::chrono::seconds(dwellSeconds) && frames - firstFrame >= 10) {
+                    // fadeIsFinish(): 0 means a screen fade/curtain is still active, so a black shot is not a render bug.
+                    CpuContext fadeCall = *cpu;
+                    InvokeIndirectCpu(0x800676E0, &fadeCall);  // WARIO-TODO: falta fadeIsFinish
+                    RT_LOGF(RT_TAG_RUNTIME, "[audit] %s draws=%u dropped=%u nohandle=%u badtexmap=%u clear=%06X fade=%u xfskip=%u nesteddl=%u texnull=%u palnull=%u\n", name.c_str(),
+                            g_gameAudit[0], g_gameAudit[1], g_gameAudit[2], g_gameAudit[3], g_gameGameClear, fadeCall.gpr[3] & 0xFF,
+                            g_gameAudit[4], g_gameAudit[5], g_gameAudit[6], g_gameAudit[7]);
+                    RT_LOGF(RT_TAG_RUNTIME, "[sweep] sampled %s frames=%u\n", name.c_str(), frames - firstFrame);
+                    { uint32_t g = 0, gsw0 = 0; if (Memory::TryRead32(kGp, g) && Memory::Contains(g, 0x144) && Memory::TryRead32(g + 0x140, gsw0)) RT_LOGF(RT_TAG_RUNTIME, "[sweep] gsw0 %d\n", int32_t(gsw0)); }
+                    {
+                      uint32_t wp = 0, hidden = 0;
+                      if (Memory::TryRead32(0x8056D010u, wp) && Memory::Contains(wp, 0x6AC)) {
+                          const uint32_t grp = Memory::Read32(wp + 0x698) & 1u;
+                          const uint32_t e = wp + grp * 0x34C;
+                          const uint32_t n = Memory::Read32(e + 0x180), objs = Memory::Read32(e + 0x184);
+                          for (uint32_t k = 0; k < n && k < 4096 && Memory::Contains(objs + k * 0x144, 0x144); ++k) {
+                              const uint32_t o = objs + k * 0x144, f0 = Memory::Read32(o), j = Memory::Read32(o + 0xC);
+                              uint32_t np = 0; if (!Memory::Contains(j, 4) || !Memory::TryRead32(j, np) || !Memory::Contains(np, 16)) continue;
+                              std::string nm; for (int c = 0; c < 31; ++c) { const char ch = char(Memory::Read8(np + c)); if (!ch || ch < 0x20 || ch > 0x7e) break; nm += ch; }
+                              if (f0 & 1u) ++hidden;
+                              if (nm == "sky_msk" || nm == "group4" || nm == "dai_k_ani_01" || nm == "sc_doa_02" || nm == "polySurface62_q00197" || nm == "mae_kusa_10")
+                                  RT_LOGF(RT_TAG_RUNTIME, "[sweep] mapobj %s f0 %08X\n", nm.c_str(), f0);
+                          }
+                          RT_LOGF(RT_TAG_RUNTIME, "[sweep] mapobjs %u hidden %u\n", n, hidden);
+                          const uint32_t na = Memory::Read32(e + 0x190), anims = Memory::Read32(e + 0x194);
+                          for (uint32_t k = 0; k < na && k < 64 && Memory::Contains(anims + k * 0x28, 0x28); ++k) {
+                              const uint32_t a = anims + k * 0x28, fd = Memory::Read32(a + 0x18);
+                              uint32_t np = 0; std::string nm;
+                              if (Memory::Contains(fd, 4) && Memory::TryRead32(fd, np) && Memory::Contains(np, 16))
+                                  for (int c = 0; c < 31; ++c) { const char ch = char(Memory::Read8(np + c)); if (!ch || ch < 0x20 || ch > 0x7e) break; nm += ch; }
+                              RT_LOGF(RT_TAG_RUNTIME, "[sweep] anim %s flags %04X time %.1f rate %.2f\n", nm.c_str(), Memory::Read16(a), Memory::ReadFloat32(a + 0x10), Memory::ReadFloat32(a + 0x14));
+                          }
+                      } }
+                    holdUntil = time + std::chrono::milliseconds(4000);  // let the audit screenshot see this map (the runner polls the log, then PrintWindows a full frame)
+                    pending = false;
+                    return;
+                }
+            } else if (!actual.empty()) {
+                RT_LOGF(RT_TAG_RUNTIME, "[sweep] redirected %s actual=%s\n", name.c_str(), actual.c_str());
+                pending = false;
+                return;
+            }
+        } else {
+            sampling = false;
+        }
+        if (time - requested > std::chrono::seconds(30 + dwellSeconds)) {
+            uint32_t stage = 0, rel = 0, effects = 0, effectPending = 0, effectReady = 0;
+            Memory::TryRead32(0x804CF364, stage);
+            Memory::TryRead32(0x8056D1C0, rel);  // isRelLoaded: r13-0x7D60, byte +8.
+            Memory::TryRead32(0x8056CFB0, effects);  // effSync: r13-0x7F70, words +8/+12.
+            if (effects && Memory::Contains(effects, 16)) {
+                Memory::TryRead32(effects + 8, effectPending);
+                Memory::TryRead32(effects + 12, effectReady);
+            }
+            const uint32_t loaded = rel && Memory::Contains(rel, 9) ? Memory::Read8(rel + 8) : 0;
+            RT_LOGF(RT_TAG_RUNTIME, "[sweep] timeout %s seq=%u next=%u stage=%u rel=%u effects=%u/%u\n",
+                    name.c_str(), now, after, stage, loaded, effectPending, effectReady);
+            Finish(2);  // Restart externally; forcing another warp during a failed transition is unsafe.
+        }
+    }
+};
+} // namespace
+
+void Tick(CpuContext* cpu, uint32_t presentedFrames) {
+    static const bool marioLog = std::getenv("GAME_MARIO_LOG") != nullptr;
+    uint32_t seq = 0;
+    if (marioLog && cpu && presentedFrames % 15 == 0 && Memory::TryRead32(kNowSeq, seq) && seq == 2) {
+        CpuContext call = *cpu;
+        InvokeIndirectCpu(0x801214EC, &call);  // marioGetPtr  // WARIO-TODO: falta marioGetPtr
+        const uint32_t mw = call.gpr[3];
+        if (Memory::Contains(mw, 0x320)) {
+            // The map object Mario stands on (hitGetName of MarioWork+0x1C4), e.g. he3_08's statue pedestal "A2D_dai".
+            CpuContext hit = *cpu;
+            hit.gpr[3] = Memory::Read32(mw + 0x1C4);
+            InvokeIndirectCpu(0x80070780, &hit);  // hitGetName  // WARIO-TODO: falta hitGetName
+            char ground[24] = {};
+            for (int i = 0; i < 23 && Memory::Contains(hit.gpr[3] + i, 1) && (ground[i] = char(Memory::Read8(hit.gpr[3] + i))); ++i) {}
+            RT_LOGF(RT_TAG_RUNTIME, "[mario] ground %s\n", ground);
+        }
+        if (Memory::Contains(mw, 0x320))
+            RT_LOGF(RT_TAG_RUNTIME, "[mario] f=%u pos %.2f %.2f %.2f xz %.3f walk %.2f mot %u sub %d held %04X rep %04X joy %u,%u ctrl %u keyoff %u flags %08X dir %.1f wpad %08X\n",
+                    presentedFrames, Memory::ReadFloat32(mw + 0x5C), Memory::ReadFloat32(mw + 0x60), Memory::ReadFloat32(mw + 0x64),
+                    Memory::ReadFloat32(mw + 0x148), Memory::ReadFloat32(mw + 0x14C), Memory::Read16(mw + 0x2C), int32_t(Memory::Read32(mw + 0x3C)),
+                    Memory::Read16(mw + 0x30C), Memory::Read16(mw + 0x310), Memory::Read8(mw + 0x316), Memory::Read8(mw + 0x317),
+                    Memory::Read8(mw + 0x34), Memory::Read8(mw + 0x35), Memory::Read32(mw), Memory::ReadFloat32(mw + 0x174),
+                    Memory::Contains(Memory::Read32(0x8056D1B8u), 4) ? Memory::Read32(Memory::Read32(0x8056D1B8u)) : 0u);
+    }
+    static const char* posEnv = std::getenv("GAME_MARIO_POS");
+    static uint32_t inMapFrames = 0;
+    if (posEnv && cpu && Memory::TryRead32(kNowSeq, seq) && seq == 2 && ++inMapFrames == 60) {
+        float p[3] = {};
+        if (std::sscanf(posEnv, "%f,%f,%f", &p[0], &p[1], &p[2]) == 3) {
+            CpuContext call = *cpu;
+            InvokeIndirectCpu(0x801214EC, &call);  // marioGetPtr  // WARIO-TODO: falta marioGetPtr
+            const uint32_t mw = call.gpr[3];
+            if (Memory::Contains(mw, 0x70)) {
+                for (int i = 0; i < 3; ++i) Memory::WriteFloat32(mw + 0x5C + 4 * i, p[i]);
+                RT_LOGF(RT_TAG_RUNTIME, "[mario] placed at %.1f %.1f %.1f\n", p[0], p[1], p[2]);
+            }
+        }
+    }
+    static Sweep sweep;
+    sweep.Tick(cpu, presentedFrames);
+}
+}

@@ -1,0 +1,44 @@
+schema_version: 1
+workspace_root: ../..
+
+# Wario Land: Shake It! (North America, RWLE01): solo main.dol (el juego no usa RELs).
+project:
+  id: wario-rwle01
+  display_name: "Wario Land: Shake It! (USA)"
+  game_id: RWLE01
+  region: E
+  base_manifest_format: wario-recomp-base-manifest
+  base_manifest_stem: wario_base
+
+memory:
+  base: 0x80000000
+  size: 0x01800000
+  # __init_registers (0x80006290): r13 = _SDA_BASE_, r2 = _SDA2_BASE_
+  sda_base: 0x806226A0
+  sda2_base: 0x806282A0
+
+inputs:
+  dol:
+    path: game/main.dol
+    sha256: 053be60dde84c8042f45ed2f4ba80c17efb2d20fedf95a414c2c7e37d336912a
+
+translation:
+  entry_points:
+    - 0x80006124
+  # Limites de funcion: analisis de DolRecomp (22.279 funciones). Nombres del SDK: firmas de Dolphin
+  # (totaldb.dsy), solo coincidencias de tamano exacto y nombre unico. El resto: fn_XXXXXXXX.
+  function_map:
+    path: projects/wario/MAP.txt
+  allow_unsupported_instructions: false
+
+runtime:
+  native_registration_root: runtime/src
+  native_abi_directories:
+    - runtime/src/hle/gx
+
+output:
+  root: generated
+  functions: functions
+  runtime_config: RuntimeConfig.h
+  data_initializer: data_sections_init.cpp
+  base_manifest: build/base/wario_base_manifest.json

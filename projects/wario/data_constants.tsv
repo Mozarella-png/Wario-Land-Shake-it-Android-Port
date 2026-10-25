@@ -1,0 +1,428 @@
+base_addr	usos	donde
+80000000	61	include/gx_guest_write.h:25; include/gx_guest_write.h:26; include/gx_guest_write.h:29; include/hle/riivolution_contract.h:108; include/hle/riivolution_contract.h:109; include/isa/ppc_isa_float.h:135
+80000001	3	src/host_cpu_baseline.cpp:79; src/host_cpu_baseline.cpp:80; tests/psq_helpers_tests.cpp:59
+80000004	3	src/hle/storage/riivolution.cpp:62; src/hle/storage/riivolution.cpp:63; src/system_bridge.cpp:433
+80000005	1	third_party/cryptopp/cpu.cpp:663
+80000007	1	tests/macos_guest_flat_memory_tests.cpp:40
+80000008	1	tests/macos_guest_flat_memory_tests.cpp:46
+80000020	3	third_party/cryptopp/dessp.cpp:23; third_party/cryptopp/dessp.cpp:25; third_party/cryptopp/dessp.cpp:28
+80000028	1	src/system_bridge.cpp:465
+80000030	1	src/system_bridge.cpp:466
+80000034	1	src/system_bridge.cpp:467
+80000038	1	src/hle/storage/dvd.cpp:914
+8000003C	1	src/hle/storage/dvd.cpp:915
+800000C0	1	src/hle/os/os_internal.h:33
+800000C4	1	src/hle/os/os_internal.h:31
+800000C8	1	src/hle/os/os_internal.h:32
+800000D4	2	src/fiber_manager.cpp:48; src/hle/os/os_internal.h:34
+800000D8	1	src/hle/os/os_internal.h:35
+800000DC	1	src/hle/os/os_internal.h:36
+800000E0	1	src/hle/os/os_internal.h:37
+800000E4	3	src/fiber_manager.cpp:49; src/hle/net/network_deferred.cpp:629; src/hle/os/os_internal.h:38
+800000F0	1	src/system_bridge.cpp:468
+800000F8	1	src/system_bridge.cpp:458
+800000FC	1	src/system_bridge.cpp:459
+800017D8	1	src/system_bridge.cpp:441
+80001800	1	src/dynamic_aspect.cpp:36
+80001808	1	src/dynamic_aspect.cpp:37
+80001810	1	src/dynamic_aspect.cpp:45
+80001818	1	src/dynamic_aspect.cpp:49
+80001820	1	src/hle/audio/ax_effects.cpp:27
+80001828	1	src/hle/audio/ax_effects.cpp:28
+80001830	1	src/hle/gx/gx_internal.h:58
+80001838	1	src/hle/gx/gx_internal.h:59
+80001840	1	src/hle/gx/gx_internal.h:60
+80001848	1	src/hle/gx/gx_stubs.cpp:35
+80001850	1	src/hle/os/os_init.cpp:102
+80001858	1	src/hle/os/os_internal.h:50
+80001860	1	src/hle/os/os_thread.cpp:341
+80001868	1	src/hle/os/os_thread.cpp:342
+80001870	1	src/hle/rel_pin.cpp:13
+80001878	1	src/hle/rel_pin.cpp:16
+80001880	1	src/music_attenuation.cpp:31
+80001888	1	src/map_sweep.cpp:170
+80001890	1	src/map_sweep.cpp:170
+80001898	1	src/map_sweep.cpp:170
+80002F00	1	src/hle/gx/gx_stubs.cpp:36
+80003040	1	src/hle/os/os_internal.h:29
+800030C8	1	src/hle/vi.cpp:453
+800030D8	2	src/hle/os/os_alarm.cpp:270; src/hle/os/os_time.cpp:43
+800030DC	2	src/hle/os/os_alarm.cpp:270; src/hle/os/os_time.cpp:44
+80003100	1	src/system_bridge.cpp:469
+80003104	1	src/system_bridge.cpp:470
+80003108	1	src/system_bridge.cpp:471
+8000310C	1	src/system_bridge.cpp:472
+80003110	1	src/system_bridge.cpp:473
+80003118	2	src/hle/os/os_init.cpp:164; src/system_bridge.cpp:487
+8000311C	2	src/system_bridge.cpp:488; src/system_bridge.cpp:522
+80003120	1	src/system_bridge.cpp:489
+80003124	2	src/system_bridge.cpp:490; src/system_bridge.cpp:520
+80003128	2	src/system_bridge.cpp:491; src/system_bridge.cpp:521
+80003130	1	src/system_bridge.cpp:492
+80003134	1	src/system_bridge.cpp:493
+80003138	1	src/system_bridge.cpp:494
+80003140	1	src/system_bridge.cpp:460
+80003144	1	src/system_bridge.cpp:461
+80003148	1	src/system_bridge.cpp:495
+8000314C	1	src/system_bridge.cpp:496
+80003180	1	src/system_bridge.cpp:434
+80003188	1	src/system_bridge.cpp:439
+80003194	1	src/system_bridge.cpp:435
+80004000	3	src/guest_profiler.cpp:54; src/settings_overlay.cpp:2106; src/map_sweep.cpp:255
+80006124	1	include/system_bridge.h:70
+800077C8	1	src/hle/strap_scene.cpp:20
+80008000	4	third_party/cryptopp/dessp.cpp:22; third_party/cryptopp/dessp.cpp:23; third_party/cryptopp/dessp.cpp:27; third_party/cryptopp/dessp.cpp:29
+80008020	4	third_party/cryptopp/dessp.cpp:22; third_party/cryptopp/dessp.cpp:24; third_party/cryptopp/dessp.cpp:26; third_party/cryptopp/dessp.cpp:28
+80008080	2	third_party/cryptopp/ariatab.cpp:76; third_party/cryptopp/camellia.cpp:421
+8000A000	1	src/recomp_mod_loader.cpp:203
+8000A400	1	src/recomp_mod_loader.cpp:203
+8002001C	1	src/hle/trk.cpp:15
+80034A98	1	third_party/cryptopp/validat2.cpp:72
+8004ED88	1	src/hle/gx/gx_tev.cpp:92
+800676E0	1	src/map_sweep.cpp:364
+80070780	1	src/map_sweep.cpp:436
+80080000	2	src/hle/gx/gx_pixel.cpp:90; src/hle/gx/gx_pixel.cpp:91
+8008A6AC	1	src/hle/gx/gx_lighting.cpp:106
+8008C000	2	src/hle/gx/gx_pixel.cpp:90; src/hle/gx/gx_pixel.cpp:91
+800A35E0	1	src/hle/audio/audio.cpp:374
+800BD860	1	src/hle/os/os_alarm.cpp:507
+80100000	4	third_party/cryptopp/dessp.cpp:24; third_party/cryptopp/dessp.cpp:25; third_party/cryptopp/dessp.cpp:26; third_party/cryptopp/dessp.cpp:27
+80100020	4	third_party/cryptopp/dessp.cpp:22; third_party/cryptopp/dessp.cpp:23; third_party/cryptopp/dessp.cpp:26; third_party/cryptopp/dessp.cpp:29
+80108000	4	third_party/cryptopp/dessp.cpp:23; third_party/cryptopp/dessp.cpp:25; third_party/cryptopp/dessp.cpp:26; third_party/cryptopp/dessp.cpp:28
+80108020	4	third_party/cryptopp/dessp.cpp:22; third_party/cryptopp/dessp.cpp:23; third_party/cryptopp/dessp.cpp:27; third_party/cryptopp/dessp.cpp:29
+801214EC	2	src/map_sweep.cpp:430; src/map_sweep.cpp:456
+8012409C	1	src/hle/audio/audio.cpp:355
+8015BC80	1	src/hle/storage/nand_api.cpp:662
+8015BCF8	1	src/hle/storage/nand_api.cpp:673
+8016E1C4	1	src/hle/gx/gx_vertex.cpp:198
+8016E9FC	1	src/hle/gx/gx_stubs.cpp:44
+80170938	1	src/hle/gx/gx_texture.cpp:267
+8017093C	1	src/hle/gx/gx_texture.cpp:276
+80170950	1	src/hle/gx/gx_texture.cpp:285
+80170964	1	src/hle/gx/gx_texture.cpp:294
+80170978	1	src/hle/gx/gx_texture.cpp:303
+8017098C	1	src/hle/gx/gx_texture.cpp:312
+801709A0	1	src/hle/gx/gx_texture.cpp:321
+80170B94	1	src/hle/gx/gx_texture.cpp:457
+80173400	1	src/hle/gx/gx_transform.cpp:90
+8017B3C8	1	src/map_sweep.cpp:329
+801938FC	2	src/hle/storage/nand_isfs.cpp:437; src/hle/storage/nand_isfs.cpp:438
+8019812C	1	src/hle/input/kpad.cpp:372
+8019B7A8	1	src/map_sweep.cpp:48
+8019B874	1	src/map_sweep.cpp:49
+8019BA28	1	src/map_sweep.cpp:46
+8019BBE0	1	src/hle/storage/nand_api.cpp:443
+8019C048	1	src/hle/storage/nand_async.cpp:166
+8019C380	1	src/hle/storage/nand_api.cpp:622
+8019CB74	1	src/hle/storage/nand_async.cpp:505
+8019CF28	1	src/hle/storage/nand_async.cpp:561
+8019D104	1	src/hle/storage/nand_async.cpp:194
+8019D720	1	src/hle/storage/nand_async.cpp:208
+8019F1E0	1	src/hle/audio/audio.cpp:226
+801A5634	3	src/map_sweep.cpp:30; src/map_sweep.cpp:301; src/map_sweep.cpp:57
+801A6000	1	src/recomp_mod_loader.cpp:204
+801A6D30	1	src/hle/audio/ax_effects.cpp:375
+801A7000	1	src/recomp_mod_loader.cpp:204
+801A7500	2	src/hle/os/os_message.cpp:219; src/hle/os/os_message.cpp:220
+801AACA8	2	src/hle/os/os_sleep.cpp:352; src/hle/os/os_sleep.cpp:353
+801AD1D4	1	src/hle/sc.cpp:182
+801AE4A0	1	src/hle/sc.cpp:161
+801AF0DC	1	src/hle/input/pad.cpp:152
+801AF1E4	1	src/hle/input/pad.cpp:164
+801AF2F0	1	src/hle/input/pad.cpp:102
+801AF44C	1	src/hle/input/pad.cpp:140
+801AF908	1	src/hle/input/pad.cpp:179
+801B2424	1	src/hle/sc.cpp:113
+801B2460	1	src/hle/sc.cpp:129
+801B9934	1	src/hle/vi.cpp:1110
+801B993C	1	src/hle/vi.cpp:1123
+801B9944	1	src/hle/vi.cpp:1136
+801BAB24	1	src/hle/vi.cpp:1296
+801BF3B4	1	src/hle/input/wpad.cpp:90
+801BF634	1	src/hle/input/wpad.cpp:215
+801BF638	1	src/hle/input/wpad.cpp:222
+801BF640	1	src/hle/input/wpad.cpp:251
+801C51B0	1	src/hle/gx/gx_egg.cpp:140
+801D8D30	2	src/hle/net/network_config.cpp:75; src/hle/net/network_config.cpp:76
+80218C2C	1	src/hle/egg_decomp.cpp:73
+8021B344	1	src/hle/gx/gx_egg.cpp:74
+8021B688	1	src/hle/gx/gx_egg.cpp:81
+8022E2BC	1	src/hle/gx/gx_egg.cpp:126
+8023BD38	2	include/abi_bridge.h:29; include/abi_bridge.h:31
+80242D7C	1	src/hle/task_thread.cpp:212
+802574A0	1	src/hle/gx/gx_egg.cpp:26
+802574E0	1	src/hle/gx/gx_egg.cpp:27
+80257520	1	src/hle/gx/gx_egg.cpp:49
+80257540	1	src/hle/gx/gx_egg.cpp:55
+80261BB4	1	src/map_sweep.cpp:43
+80274F64	1	src/hle/os/os_thread.cpp:341
+8028CD50	1	include/native_cpu_calls.inc:57
+802A3EE8	1	src/dynamic_aspect.cpp:27
+802A3EF4	1	src/dynamic_aspect.cpp:28
+802B6C80	2	include/native_cpu_calls.inc:96; src/hle/gx/gx_dl.cpp:1568
+802B71E0	2	include/native_cpu_calls.inc:99; src/hle/gx/gx_dl.cpp:1588
+802BAED0	1	src/hle/gx/gx_egg.cpp:139
+802BB820	2	src/hle/gx/gx_egg.cpp:138; src/hle/gx/gx_egg.cpp:142
+802D1B50	1	src/dynamic_aspect.cpp:34
+80315C74	1	src/map_sweep.cpp:43
+80315D48	1	src/map_sweep.cpp:43
+8031617C	1	src/map_sweep.cpp:42
+80319180	1	src/guest_profiler.cpp:54
+80319200	1	src/hle/vi.cpp:867
+80377A10	1	src/netplay/game_menus.cpp:17
+80386000	1	src/dynamic_aspect.cpp:38
+80386298	1	src/hle/os/os_alarm.cpp:491
+803869E0	1	src/hle/sc.cpp:100
+80386F14	1	src/dynamic_aspect.cpp:29
+80386F20	1	src/dynamic_aspect.cpp:31
+80386F24	1	src/dynamic_aspect.cpp:32
+80388B80	1	src/hle/gx/gx_egg.cpp:49
+80388BA0	1	src/hle/gx/gx_egg.cpp:55
+80388BC0	1	src/hle/gx/gx_egg.cpp:62
+80388BE0	2	src/hle/gx/gx_egg.cpp:62; src/hle/gx/gx_egg.cpp:64
+803A52F4	1	src/hle/os/os_init.cpp:144
+803C2060	1	src/hle/audio/ax_internal.h:45
+803C206C	1	src/hle/audio/ax_internal.h:46
+803C20C0	1	src/hle/audio/ax_internal.h:47
+803C20D0	1	src/hle/audio/ax_internal.h:48
+803C63F0	1	src/hle/os/os_init.cpp:324
+803CE4B4	1	src/dynamic_aspect.cpp:48
+803F4404	1	src/hle/audio/audio.cpp:392
+803F4414	1	src/hle/audio/audio.cpp:398
+803F44FC	1	src/hle/audio/audio.cpp:243
+803F4504	1	src/hle/audio/audio.cpp:249
+803F4F14	1	src/hle/storage/dvd.cpp:1051
+803FE508	3	src/hle/storage/nand_isfs.cpp:914; src/hle/storage/nand_isfs.cpp:920; src/hle/storage/nand_isfs.cpp:935
+80400C94	1	src/hle/gx/gx_init.cpp:117
+80401650	1	include/native_cpu_calls.inc:52
+80401C44	1	include/native_cpu_calls.inc:53
+80401C78	1	include/native_cpu_calls.inc:54
+80402318	1	include/native_cpu_calls.inc:55
+80402540	1	include/native_cpu_calls.inc:56
+80402C58	1	src/hle/gx/gx_init.cpp:151
+80402D20	1	src/hle/gx/gx_init.cpp:152
+8040307C	1	include/native_cpu_calls.inc:58
+804032A0	1	include/native_cpu_calls.inc:59
+804032D4	1	include/native_cpu_calls.inc:60
+80403344	1	include/native_cpu_calls.inc:61
+80404424	1	include/native_cpu_calls.inc:62
+80404448	1	include/native_cpu_calls.inc:63
+804046D0	1	include/native_cpu_calls.inc:64
+80404924	1	include/native_cpu_calls.inc:65
+80404D6C	1	include/native_cpu_calls.inc:67
+80404F50	1	include/native_cpu_calls.inc:66
+80405898	1	include/native_cpu_calls.inc:68
+804058B8	1	include/native_cpu_calls.inc:69
+80405A40	1	include/native_cpu_calls.inc:70
+80405A80	1	include/native_cpu_calls.inc:71
+80405AC0	1	include/native_cpu_calls.inc:72
+80405B18	1	include/native_cpu_calls.inc:73
+80405BD0	1	include/native_cpu_calls.inc:74
+80405C34	1	include/native_cpu_calls.inc:75
+80405C90	1	include/native_cpu_calls.inc:76
+80405CE0	1	include/native_cpu_calls.inc:77
+80405D30	1	include/native_cpu_calls.inc:78
+80405D6C	1	include/native_cpu_calls.inc:79
+80405EAC	1	include/native_cpu_calls.inc:80
+80406008	1	include/native_cpu_calls.inc:81
+804064DC	1	include/native_cpu_calls.inc:82
+80406938	1	include/native_cpu_calls.inc:83
+80406A40	1	include/native_cpu_calls.inc:84
+8040759C	1	src/hle/os/os_interrupt.cpp:492
+80407618	1	src/hle/storage/nand_isfs.cpp:915
+80408C38	1	src/hle/storage/nand_isfs.cpp:921
+8040CD74	1	src/hle/rel_pin.cpp:14
+8040CE24	1	src/hle/rel_pin.cpp:15
+80410A98	1	src/map_sweep.cpp:90
+80410B64	1	src/map_sweep.cpp:101
+80410F0C	1	src/map_sweep.cpp:147
+80411164	1	src/map_sweep.cpp:140
+804111E4	1	src/map_sweep.cpp:143
+80411308	1	src/map_sweep.cpp:135
+804116A0	1	src/map_sweep.cpp:109
+8041187C	1	src/map_sweep.cpp:154
+80411938	1	src/map_sweep.cpp:118
+804119E0	1	src/map_sweep.cpp:114
+80417A8C	1	include/abi_bridge.h:259
+80417BF0	1	src/hle/os/os_thread.cpp:311
+80419E5C	1	src/hle/os/os_init.cpp:89
+8041B374	1	src/hle/os/os_interrupt.cpp:243
+8041B738	1	src/hle/os/os_interrupt.cpp:244
+8041BAC4	1	src/hle/os/os_message.cpp:42
+8041BB24	2	src/hle/os/os_message.cpp:168; src/hle/task_thread.cpp:202
+8041BBEC	2	src/hle/os/os_message.cpp:196; src/hle/task_thread.cpp:166
+8041C788	1	src/hle/os/os_thread.cpp:216
+8041DA1C	1	src/hle/os/os_init.cpp:30
+8041DCB0	1	src/hle/os/os_context.cpp:82
+8041E4F0	1	src/hle/os/os_thread.cpp:325
+8041FB34	1	src/hle/os/os_interrupt.cpp:397
+80420E78	1	src/hle/os/os_reset.cpp:145
+80428730	1	src/hle/vi.cpp:982
+8042A18C	1	src/netplay/world_map_nav.cpp:22
+8042A1A0	1	src/netplay/world_map_nav.cpp:30
+8042A3CC	1	src/netplay/world_map_nav.cpp:35
+8042B084	2	src/netplay/netplay_ui.cpp:146; src/netplay/netplay_ui.cpp:771
+804BA998	1	src/hle/sc.cpp:90
+804BA9E0	1	src/hle/sc.cpp:138
+804CF364	2	src/hle/vi.cpp:493; src/map_sweep.cpp:408
+804E40C0	1	src/hle/audio/ax_internal.h:41
+804F5270	1	src/hle/os/os_thread.cpp:341
+80503588	1	third_party/cryptopp/sosemanuk.cpp:272
+8051357A	1	third_party/cryptopp/lsh256.cpp:83
+80521E70	4	src/hle/gx/gx_init.cpp:226; src/hle/gx/gx_init.cpp:249; src/hle/gx/gx_init.cpp:293; src/hle/gx/gx_internal.h:58
+80521E74	1	src/hle/gx/gx_init.cpp:224
+80521E78	1	src/hle/gx/gx_init.cpp:227
+80521E84	2	src/hle/gx/gx_init.cpp:228; src/hle/gx/gx_internal.h:59
+80521E88	1	src/hle/gx/gx_init.cpp:229
+80521E8C	2	src/hle/gx/gx_init.cpp:225; src/hle/gx/gx_internal.h:60
+80521EF0	2	src/hle/gx/gx_init.cpp:223; src/hle/gx/gx_init.cpp:303
+805224F0	2	src/hle/gx/gx_init.cpp:248; src/hle/gx/gx_init.cpp:295
+80522780	1	src/hle/storage/nand_api.cpp:113
+80529D68	3	src/hle/task_thread.cpp:180; src/hle/task_thread.cpp:24; src/hle/task_thread.cpp:61
+80550CC0	1	src/hle/task_thread.cpp:56
+80550F48	1	src/hle/task_thread.cpp:65
+80550F9C	1	src/hle/task_thread.cpp:86
+80551054	1	src/hle/task_thread.cpp:96
+80551378	1	src/hle/task_thread.cpp:107
+80551658	1	src/hle/task_thread.cpp:64
+80551AA0	1	src/hle/storage/dvd.cpp:135
+80551D38	1	src/hle/task_thread.cpp:85
+8055531C	2	src/hle/os/os_init.cpp:41; src/hle/os/os_init.cpp:42
+80557218	1	src/hle/os/os_init.cpp:102
+805653D0	1	src/dynamic_aspect.cpp:36
+8056CF80	1	src/hle/gx/gx_tev.cpp:94
+8056CFB0	2	src/map_sweep.cpp:267; src/map_sweep.cpp:410
+8056D010	2	src/hle/gx/gx_tev.cpp:94; src/map_sweep.cpp:372
+8056D0D8	2	src/hle/vi.cpp:492; src/map_sweep.cpp:170
+8056D0DC	2	src/hle/vi.cpp:492; src/map_sweep.cpp:170
+8056D188	1	src/hle/rel_pin.cpp:13
+8056D198	2	src/map_sweep.cpp:170; src/virtual_remote.cpp:141
+8056D1B8	1	src/map_sweep.cpp:447
+8056D1C0	1	src/map_sweep.cpp:409
+8056D278	1	src/hle/os/os_thread.cpp:342
+8056D804	1	src/map_sweep.cpp:271
+8056DB30	1	src/hle/os/os_internal.h:50
+8056DC48	1	src/hle/storage/dvd.cpp:974
+8056DC50	1	src/hle/storage/dvd.cpp:972
+8056DC54	1	src/hle/storage/dvd.cpp:973
+8056DF58	1	src/hle/audio/ax_memory.cpp:71
+8056DF70	1	src/hle/gx/gx_stubs.cpp:35
+8056E030	1	src/hle/storage/nand_api.cpp:116
+8056E280	1	src/hle/vi.cpp:867
+8056F21C	1	src/hle/gx/gx_tev.cpp:99
+8056F220	1	src/hle/gx/gx_tev.cpp:99
+80574F20	1	src/map_sweep.cpp:354
+80576060	1	src/hle/audio/ax_effects.cpp:27
+80576064	1	src/hle/audio/ax_effects.cpp:28
+805ADD74	1	src/hle/vi.cpp:160
+805ADD76	1	src/hle/vi.cpp:161
+805ADD82	1	src/hle/vi.cpp:162
+805ADD8C	1	src/hle/vi.cpp:163
+805ADDA0	1	src/hle/vi.cpp:169
+805B7480	1	src/hle/audio/ax_internal.h:34
+805B74E0	1	src/hle/audio/ax_internal.h:42
+80602450	1	src/hle/storage/dvd.cpp:958
+80602660	1	src/hle/storage/dvd.cpp:1001
+80602880	1	src/hle/gx/gx_init.cpp:32
+80602900	1	src/hle/gx/gx_init.cpp:33
+80602F00	1	src/hle/gx/gx_init.cpp:121
+80602F24	1	src/hle/gx/gx_init.cpp:120
+80619518	2	src/hle/net/network_deferred.cpp:630; src/hle/os/os_internal.h:40
+80619830	2	src/fiber_manager.cpp:50; src/hle/os/os_internal.h:42
+80619930	1	src/hle/os/os_internal.h:41
+8061D630	1	src/hle/os/os_internal.h:44
+8061FAF8	1	src/hle/vi.cpp:158
+8061FB04	1	src/hle/vi.cpp:165
+8061FB60	1	src/hle/vi.cpp:168
+8061FB68	1	src/hle/vi.cpp:159
+8061FB74	1	src/hle/vi.cpp:167
+8061FB78	1	src/hle/vi.cpp:166
+8061FB80	2	src/fiber_manager.cpp:487; src/hle/vi.cpp:170
+8061FB84	1	src/fiber_manager.cpp:488
+8061FBA4	1	src/hle/vi.cpp:164
+8061FC38	1	src/hle/audio/audio.cpp:26
+8061FC3C	1	src/hle/audio/audio.cpp:27
+8061FC6C	1	src/hle/audio/audio.cpp:28
+8061FC70	1	src/hle/audio/audio.cpp:29
+8061FDF0	1	src/hle/audio/ax_internal.h:35
+8061FDF8	1	src/hle/audio/ax_internal.h:36
+8061FDFC	1	src/hle/audio/ax_internal.h:37
+8061FE04	1	src/hle/audio/ax_internal.h:38
+8061FE08	1	src/hle/audio/ax_internal.h:39
+8061FE0C	1	src/hle/audio/ax_internal.h:40
+8061FE70	1	src/hle/storage/dvd.cpp:997
+8061FE78	1	src/hle/storage/dvd.cpp:976
+8061FEB0	1	src/hle/storage/dvd.cpp:977
+8061FED0	1	src/hle/storage/dvd.cpp:996
+8061FED4	1	src/hle/storage/dvd.cpp:994
+8061FED5	1	src/hle/storage/dvd.cpp:995
+8061FF58	1	src/hle/gx/gx_init.cpp:123
+8061FF59	1	src/hle/gx/gx_init.cpp:124
+8061FF68	1	src/hle/gx/gx_init.cpp:119
+8061FF6C	1	src/hle/gx/gx_init.cpp:118
+8061FF78	1	src/hle/gx/gx_init.cpp:153
+8061FF80	1	src/hle/gx/gx_internal.h:63
+806200B8	1	src/hle/os/os_internal.h:28
+806200D8	3	src/fiber_manager.cpp:487; src/fiber_manager.cpp:53; src/hle/os/os_internal.h:49
+806200DC	2	src/fiber_manager.cpp:52; src/hle/os/os_internal.h:45
+806200E0	4	src/fiber_manager.cpp:486; src/fiber_manager.cpp:51; src/hle/os/os_internal.h:46; src/hle/vi.cpp:587
+80627918	1	src/hle/gx/gx_internal.h:57
+80639040	1	src/system_bridge.cpp:408
+8069957B	1	third_party/cryptopp/cast.cpp:163
+80800080	2	third_party/cryptopp/ariatab.cpp:111; third_party/cryptopp/camellia.cpp:504
+808065A3	1	third_party/cryptopp/tftables.cpp:76
+80808000	2	third_party/cryptopp/ariatab.cpp:152; third_party/cryptopp/camellia.cpp:338
+80808080	1	third_party/pugixml/pugixml.cpp:1695
+80808081	1	src/hle/gx/gx_dl.cpp:70
+8088FDB8	1	src/hle/task_thread.cpp:100
+808B4C20	1	src/dynamic_aspect.cpp:49
+80992050	1	src/netplay/game_menus.cpp:41
+809953C0	1	src/netplay/game_menus.cpp:30
+80995400	1	src/netplay/game_menus.cpp:31
+80995440	1	src/netplay/game_menus.cpp:32
+80995480	1	src/netplay/game_menus.cpp:33
+809954C0	1	src/netplay/game_menus.cpp:34
+80995500	1	src/netplay/game_menus.cpp:35
+80995540	1	src/netplay/game_menus.cpp:36
+80995580	1	src/netplay/game_menus.cpp:37
+809BEBA0	4	src/hle/task_thread.cpp:34; src/hle/task_thread.cpp:38; src/hle/task_thread.cpp:67; src/hle/task_thread.cpp:68
+809BEBA4	1	src/hle/task_thread.cpp:69
+809BEBA5	1	src/hle/task_thread.cpp:70
+809BEBA6	1	src/hle/task_thread.cpp:71
+809BEBA7	1	src/hle/task_thread.cpp:72
+809BECF0	2	src/hle/task_thread.cpp:34; src/hle/task_thread.cpp:37
+809C1830	1	src/dynamic_aspect.cpp:37
+809C183C	1	src/dynamic_aspect.cpp:45
+809C2898	1	src/music_attenuation.cpp:31
+809D3A80	1	third_party/cryptopp/tftables.cpp:274
+80A0E0E0	1	third_party/cryptopp/tftables.cpp:130
+80A38065	1	third_party/cryptopp/tftables.cpp:206
+80BDB038	1	third_party/cryptopp/marss.cpp:119
+80BF6840	2	src/hle/rel_pin.cpp:16; src/hle/vi.cpp:446
+80BF691C	1	src/guest_profiler.cpp:54
+80C5A648	1	src/guest_profiler.cpp:54
+80DEB1FE	2	third_party/cryptopp/sha.cpp:156; third_party/cryptopp/shacal2.cpp:157
+80EFE9AC	1	third_party/cryptopp/sosemanuk.cpp:174
+80EFE9BF	1	third_party/cryptopp/sosemanuk.cpp:109
+80F12640	1	src/hle/vi.cpp:446
+80F594F9	1	third_party/cryptopp/marss.cpp:122
+80F6E831	1	third_party/cryptopp/marss.cpp:20
+81008181	2	third_party/cryptopp/ariatab.cpp:80; third_party/cryptopp/camellia.cpp:445
+810C7381	1	third_party/cryptopp/tftables.cpp:275
+810F23BB	1	third_party/cryptopp/marss.cpp:90
+81223135	1	third_party/cryptopp/lea.cpp:38
+812A8194	1	third_party/cryptopp/tftables.cpp:230
+812AFCB8	1	third_party/cryptopp/lea.cpp:67
+813BC8AB	2	third_party/cryptopp/lea.cpp:61; third_party/cryptopp/lea.cpp:65
+81700000	2	src/main.cpp:903; src/main.cpp:919
+817EF720	1	src/system_bridge.cpp:409
+81800000	9	include/gx_guest_write.h:25; src/memory.cpp:542; src/netplay/game_menus.cpp:213; src/netplay/game_menus.cpp:214; src/netplay/game_menus.cpp:295; src/netplay/netplay_ui.cpp:474
+81810081	2	third_party/cryptopp/ariatab.cpp:87; third_party/cryptopp/camellia.cpp:496
+81818100	2	third_party/cryptopp/ariatab.cpp:127; third_party/cryptopp/camellia.cpp:321
+8181942A	1	third_party/cryptopp/tftables.cpp:100
+81B1AA47	1	third_party/cryptopp/sosemanuk.cpp:268
+81B66760	1	third_party/cryptopp/marss.cpp:110
+81B93F08	1	third_party/cryptopp/sosemanuk.cpp:130
+81B93F6E	1	third_party/cryptopp/sosemanuk.cpp:195
+81C2C92E	2	third_party/cryptopp/sha.cpp:162; third_party/cryptopp/shacal2.cpp:163
+81FB0F0F	1	third_party/cryptopp/tftables.cpp:156

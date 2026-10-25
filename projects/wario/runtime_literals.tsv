@@ -1,0 +1,213 @@
+base	wario	nombre	archivo
+8026DEF4	80417A8C	OSLoadContext	include/abi_bridge.h
+8028B638	80401650	GXSetVtxDesc	include/native_cpu_calls.inc
+8028BEC8	80401C44	GXClearVtxDesc	include/native_cpu_calls.inc
+8028BEFC	80401C78	GXSetVtxAttrFmt	include/native_cpu_calls.inc
+8028C610	80402318	GXSetTexCoordGen2	include/native_cpu_calls.inc
+8028C838	80402540	GXSetNumTexGens	include/native_cpu_calls.inc
+8028CD50	-	GXDrawDone	include/native_cpu_calls.inc
+8028D3B4	8040307C	GXBegin	include/native_cpu_calls.inc
+8028D5D8	804032A0	GXSetLineWidth	include/native_cpu_calls.inc
+8028D60C	804032D4	GXSetPointSize	include/native_cpu_calls.inc
+8028D67C	80403344	GXSetCullMode	include/native_cpu_calls.inc
+8028E778	80404424	GXSetNumChans	include/native_cpu_calls.inc
+8028E79C	80404448	GXSetChanCtrl	include/native_cpu_calls.inc
+8028EA24	804046D0	GXInitTexObj	include/native_cpu_calls.inc
+8028EC78	80404924	GXInitTexObjLOD	include/native_cpu_calls.inc
+8028F198	80404F50	GXInvalidateTexAll	include/native_cpu_calls.inc
+8028EF78	80404D6C	GXLoadTexObj	include/native_cpu_calls.inc
+8028FD44	80405898	GXSetNumIndStages	include/native_cpu_calls.inc
+8028FD64	804058B8	GXSetTevDirect	include/native_cpu_calls.inc
+8028FEEC	80405A40	GXSetTevColorIn	include/native_cpu_calls.inc
+8028FF2C	80405A80	GXSetTevAlphaIn	include/native_cpu_calls.inc
+8028FF6C	80405AC0	GXSetTevColorOp	include/native_cpu_calls.inc
+8028FFC4	80405B18	GXSetTevAlphaOp	include/native_cpu_calls.inc
+8029007C	80405BD0	GXSetTevColorS10	include/native_cpu_calls.inc
+802900E0	80405C34	GXSetTevKColor	include/native_cpu_calls.inc
+8029013C	80405C90	GXSetTevKColorSel	include/native_cpu_calls.inc
+8029018C	80405CE0	GXSetTevKAlphaSel	include/native_cpu_calls.inc
+802901DC	80405D30	GXSetTevSwapMode	include/native_cpu_calls.inc
+80290218	80405D6C	GXSetTevSwapModeTable	include/native_cpu_calls.inc
+80290358	80405EAC	GXSetTevOrder	include/native_cpu_calls.inc
+802904B4	80406008	GXSetNumTevStages	include/native_cpu_calls.inc
+80290828	804064DC	GXSetBlendMode	include/native_cpu_calls.inc
+80291788	80406938	GXLoadPosMtxImm	include/native_cpu_calls.inc
+80291830	80406A40	GXSetCurrentMtx	include/native_cpu_calls.inc
+80006124	80006124	__start	include/system_bridge.h
+805653D0	80001800	cuarentena	src/dynamic_aspect.cpp
+809C1830	80001808	cuarentena	src/dynamic_aspect.cpp
+809C183C	80001810	cuarentena	src/dynamic_aspect.cpp
+802A3F0C	803CE4B4	bta_hh_sdp_cmpl	src/dynamic_aspect.cpp
+808B4C20	80001818	cuarentena	src/dynamic_aspect.cpp
+80506030	80619830	dato	src/fiber_manager.cpp
+8056DBB0	806200E0	dato	src/fiber_manager.cpp
+8056DBAC	806200DC	dato	src/fiber_manager.cpp
+8056DBA8	806200D8	dato	src/fiber_manager.cpp
+8056DBB0	806200E0	dato	src/fiber_manager.cpp
+8056DBA8	806200D8	dato	src/fiber_manager.cpp
+8056DD88	8061FB80	dato	src/fiber_manager.cpp
+8056DD8C	8061FB84	dato	src/fiber_manager.cpp
+80004000	-	memcpy	src/guest_profiler.cpp
+80BF691C	-	rel_0	src/guest_profiler.cpp
+8056DDD0	8061FC38	dato	src/hle/audio/audio.cpp
+8056DDD4	8061FC3C	dato	src/hle/audio/audio.cpp
+8056DE04	8061FC6C	dato	src/hle/audio/audio.cpp
+8056DE08	8061FC70	dato	src/hle/audio/audio.cpp
+80288EE8	803F44FC	DSPCheckInit	src/hle/audio/audio.cpp
+80288EF0	803F4504	DSPAddTask	src/hle/audio/audio.cpp
+80288DF0	803F4404	DSPCheckMailFromDSP	src/hle/audio/audio.cpp
+80288E00	803F4414	DSPReadMailFromDSP	src/hle/audio/audio.cpp
+80576060	80001820	cuarentena	src/hle/audio/ax_effects.cpp
+80576064	80001828	cuarentena	src/hle/audio/ax_effects.cpp
+8050FD00	805B7480	dato	src/hle/audio/ax_internal.h
+8056DF48	8061FDF0	dato	src/hle/audio/ax_internal.h
+8056DF50	8061FDF8	dato	src/hle/audio/ax_internal.h
+8056DF54	8061FDFC	dato	src/hle/audio/ax_internal.h
+8056DF5C	8061FE04	dato	src/hle/audio/ax_internal.h
+8056DF60	8061FE08	dato	src/hle/audio/ax_internal.h
+8056DF64	8061FE0C	dato	src/hle/audio/ax_internal.h
+804B7780	804E40C0	dato	src/hle/audio/ax_internal.h
+8050FD60	805B74E0	dato	src/hle/audio/ax_internal.h
+80286698	803C2060	__AXDSPInitCallback	src/hle/audio/ax_internal.h
+802866A4	803C206C	__AXDSPResumeCallback	src/hle/audio/ax_internal.h
+802866F8	803C20C0	__AXDSPDoneCallback	src/hle/audio/ax_internal.h
+80286708	803C20D0	__AXDSPRequestCallback	src/hle/audio/ax_internal.h
+8056DF58	-	escritura anulada	src/hle/audio/ax_memory.cpp
+80521520	80602880	dato	src/hle/gx/gx_init.cpp
+805215A0	80602900	dato	src/hle/gx/gx_init.cpp
+8028AAC8	80400C94	GXCPInterruptHandler	src/hle/gx/gx_init.cpp
+8056DFA4	8061FF6C	dato	src/hle/gx/gx_init.cpp
+8056DFA0	8061FF68	dato	src/hle/gx/gx_init.cpp
+80521BC4	80602F24	dato	src/hle/gx/gx_init.cpp
+80521BA0	80602F00	dato	src/hle/gx/gx_init.cpp
+8056DF90	8061FF58	dato	src/hle/gx/gx_init.cpp
+8056DF91	8061FF59	dato	src/hle/gx/gx_init.cpp
+8028CF90	80402C58	GXTokenInterruptHandler	src/hle/gx/gx_init.cpp
+8028D058	80402D20	GXFinishInterruptHandler	src/hle/gx/gx_init.cpp
+8056DFB0	8061FF78	dato	src/hle/gx/gx_init.cpp
+80521E74	-	escritura anulada	src/hle/gx/gx_init.cpp
+80521E8C	-	escritura anulada	src/hle/gx/gx_init.cpp
+80521E70	-	escritura anulada	src/hle/gx/gx_init.cpp
+80521E78	-	escritura anulada	src/hle/gx/gx_init.cpp
+80521E84	-	escritura anulada	src/hle/gx/gx_init.cpp
+80521E88	-	escritura anulada	src/hle/gx/gx_init.cpp
+80576098	80627918	dato	src/hle/gx/gx_internal.h
+80521E70	80001830	cuarentena	src/hle/gx/gx_internal.h
+80521E84	80001838	cuarentena	src/hle/gx/gx_internal.h
+80521E8C	80001840	cuarentena	src/hle/gx/gx_internal.h
+8056DFB8	8061FF80	dato	src/hle/gx/gx_internal.h
+8056DF70	80001848	cuarentena	src/hle/gx/gx_stubs.cpp
+80505D18	80619518	dato	src/hle/net/network_deferred.cpp
+80275A58	8041F054	func_ __OSTimeToSystemTime	src/hle/os/os_alarm.cpp
+8026C8E8	80416128	func_ InsertAlarm	src/hle/os/os_alarm.cpp
+8026C8E8	80416128	func_ InsertAlarm	src/hle/os/os_alarm.cpp
+80275A58	8041F054	func_ __OSTimeToSystemTime	src/hle/os/os_alarm.cpp
+8026C8E8	80416128	func_ InsertAlarm	src/hle/os/os_alarm.cpp
+802748F8	8041DCB0	OSGetCurrentThread	src/hle/os/os_context.cpp
+80274664	8041DA1C	func_ __OSThreadInit	src/hle/os/os_init.cpp
+80274664	8041DA1C	func_ __OSThreadInit	src/hle/os/os_init.cpp
+80274664	8041DA1C	__OSThreadInit	src/hle/os/os_init.cpp
+80270198	80419E5C	OSFatal	src/hle/os/os_init.cpp
+80557218	80001850	cuarentena	src/hle/os/os_init.cpp
+8026A5B0	803A52F4	SIInit	src/hle/os/os_init.cpp
+8026B3C0	803C63F0	PPCMfhid2	src/hle/os/os_init.cpp
+8056DB88	806200B8	dato	src/hle/os/os_internal.h
+80505D18	80619518	dato	src/hle/os/os_internal.h
+80506130	80619930	dato	src/hle/os/os_internal.h
+80506030	80619830	dato	src/hle/os/os_internal.h
+8056D2A0	8061D630	dato	src/hle/os/os_internal.h
+8056DBAC	806200DC	dato	src/hle/os/os_internal.h
+8056DBB0	806200E0	dato	src/hle/os/os_internal.h
+8056DBA8	806200D8	dato	src/hle/os/os_internal.h
+8056DB30	80001858	cuarentena	src/hle/os/os_internal.h
+80271704	8041B374	__OSSetInterruptHandler	src/hle/os/os_interrupt.cpp
+80271AC8	8041B738	__OSUnmaskInterrupts	src/hle/os/os_interrupt.cpp
+80276544	8041FB34	__OSDefaultPowerCallback	src/hle/os/os_interrupt.cpp
+80295074	8040759C	IPCInit	src/hle/os/os_interrupt.cpp
+802727DC	8041BAC4	OSInitMessageQueue	src/hle/os/os_message.cpp
+8027283C	8041BB24	OSSendMessage	src/hle/os/os_message.cpp
+80272904	8041BBEC	OSReceiveMessage	src/hle/os/os_message.cpp
+80277888	80420E78	exit	src/hle/os/os_reset.cpp
+8026DE74	80417A0C	func_ OSSaveContext	src/hle/os/os_scheduler.cpp
+8026DE74	80417A0C	func_ OSSaveContext	src/hle/os/os_scheduler.cpp
+802733D0	8041C788	__OSUnlockAllMutex	src/hle/os/os_thread.cpp
+8026E058	80417BF0	OSInitContext	src/hle/os/os_thread.cpp
+8027510C	8041E4F0	OSExitThread	src/hle/os/os_thread.cpp
+804F5270	80001860	cuarentena	src/hle/os/os_thread.cpp
+8056D278	80001868	cuarentena	src/hle/os/os_thread.cpp
+8056D188	80001870	cuarentena	src/hle/rel_pin.cpp
+80292FC0	8040CD74	MEMAllocFromExpHeapEx	src/hle/rel_pin.cpp
+80293070	8040CE24	MEMFreeToExpHeap	src/hle/rel_pin.cpp
+80BF6840	80001878	cuarentena	src/hle/rel_pin.cpp
+80551AA0	80551AA0	dato	src/hle/storage/dvd.cpp
+8050B690	80602450	dato	src/hle/storage/dvd.cpp
+8056DC50	-	escritura anulada	src/hle/storage/dvd.cpp
+8056DC54	-	escritura anulada	src/hle/storage/dvd.cpp
+8056DC48	-	escritura anulada	src/hle/storage/dvd.cpp
+8056DC84	8061FE78	dato	src/hle/storage/dvd.cpp
+8056DCC0	8061FEB0	dato	src/hle/storage/dvd.cpp
+8056DCE4	8061FED4	dato	src/hle/storage/dvd.cpp
+8056DCE5	8061FED5	dato	src/hle/storage/dvd.cpp
+8056DCE0	8061FED0	dato	src/hle/storage/dvd.cpp
+8056DC7C	8061FE70	dato	src/hle/storage/dvd.cpp
+8050B8A0	80602660	dato	src/hle/storage/dvd.cpp
+80278F44	803F4F14	__DVDFSInit	src/hle/storage/dvd.cpp
+8056E030	-	escritura anulada	src/hle/storage/nand_api.cpp
+80293C70	803FE508	ISFS_OpenLib	src/hle/storage/nand_isfs.cpp
+802950F0	80407618	IPCSetBufferLo	src/hle/storage/nand_isfs.cpp
+80293C70	803FE508	ISFS_OpenLib	src/hle/storage/nand_isfs.cpp
+80296710	80408C38	iosCreateHeap	src/hle/storage/nand_isfs.cpp
+80293C70	803FE508	ISFS_OpenLib	src/hle/storage/nand_isfs.cpp
+809BEBA0	-	escritura anulada	src/hle/task_thread.cpp
+809BEBA4	-	escritura anulada	src/hle/task_thread.cpp
+809BEBA5	-	escritura anulada	src/hle/task_thread.cpp
+809BEBA6	-	escritura anulada	src/hle/task_thread.cpp
+809BEBA7	-	escritura anulada	src/hle/task_thread.cpp
+80272904	8041BBEC	OSReceiveMessage	src/hle/task_thread.cpp
+8027283C	8041BB24	OSSendMessage	src/hle/task_thread.cpp
+8056DD00	8061FAF8	dato	src/hle/vi.cpp
+8056DD70	8061FB68	dato	src/hle/vi.cpp
+8050BAF4	805ADD74	dato	src/hle/vi.cpp
+8050BAF6	805ADD76	dato	src/hle/vi.cpp
+8050BB02	805ADD82	dato	src/hle/vi.cpp
+8050BB0C	805ADD8C	dato	src/hle/vi.cpp
+8056DDAC	8061FBA4	dato	src/hle/vi.cpp
+8056DD0C	8061FB04	dato	src/hle/vi.cpp
+8056DD80	8061FB78	dato	src/hle/vi.cpp
+8056DD7C	8061FB74	dato	src/hle/vi.cpp
+8056DD68	8061FB60	dato	src/hle/vi.cpp
+8050BB20	805ADDA0	dato	src/hle/vi.cpp
+8056DD88	8061FB80	dato	src/hle/vi.cpp
+8056DBB0	806200E0	dato	src/hle/vi.cpp
+809C2898	80001880	cuarentena	src/music_attenuation.cpp
+80004000	-	memcpy	src/settings_overlay.cpp
+801A5634	-	__memAlloc	src/map_sweep.cpp
+80261A5C	8031617C	sin	src/map_sweep.cpp
+80261650	80315C74	cos	src/map_sweep.cpp
+80261724	80315D48	floor	src/map_sweep.cpp
+80261BB4	-	fmod	src/map_sweep.cpp
+8019BA28	-	sincosf	src/map_sweep.cpp
+8019B7A8	-	reviseAngle	src/map_sweep.cpp
+8019B874	-	angleABf	src/map_sweep.cpp
+801A5634	-	__memAlloc	src/map_sweep.cpp
+80277934	80410A98	PSMTXConcat	src/map_sweep.cpp
+80277A00	80410B64	PSMTXInverse	src/map_sweep.cpp
+80278354	804116A0	PSMTXMultVec	src/map_sweep.cpp
+80278978	804119E0	PSVECCrossProduct	src/map_sweep.cpp
+802788B8	80411938	PSVECNormalize	src/map_sweep.cpp
+80277FBC	80411308	C_MTXLookAt	src/map_sweep.cpp
+80277E18	80411164	PSMTXTrans	src/map_sweep.cpp
+80277E98	804111E4	PSMTXScale	src/map_sweep.cpp
+80277BC0	80410F0C	PSMTXRotRad	src/map_sweep.cpp
+80278610	8041187C	C_MTXOrtho	src/map_sweep.cpp
+8056D0D8	80001888	cuarentena	src/map_sweep.cpp
+8056D0DC	80001890	cuarentena	src/map_sweep.cpp
+8056D198	80001898	cuarentena	src/map_sweep.cpp
+80004000	-	memcpy	src/map_sweep.cpp
+801A5634	-	__memAlloc	src/map_sweep.cpp
+8017B3C8	-	seqSetSeq	src/map_sweep.cpp
+800676E0	-	fadeIsFinish	src/map_sweep.cpp
+801214EC	-	marioGetPtr	src/map_sweep.cpp
+80070780	-	hitGetName	src/map_sweep.cpp
+801214EC	-	marioGetPtr	src/map_sweep.cpp
+80576720	80639040	dato	src/system_bridge.cpp

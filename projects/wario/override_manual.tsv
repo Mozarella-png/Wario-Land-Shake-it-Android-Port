@@ -1,0 +1,10 @@
+# Sustituciones cuya direccion base no tiene nombre en el mapa de la base: base_addr	wario_addr	nombre	como
+802DE7B4	8040B5F8	KPADRead	KPAD.c: unica funcion KPAD llamada por cuadro desde el juego
+8028CD50	80402A18	GXSetDrawDone (sustituye GXDrawDone de la base)	GXSetDrawDone: escribe 0x45000002 en la FIFO y pone DrawDone=0 (r13-0x2720); GXWaitDrawDone 0x80402AB0 duerme en FinishQueue hasta DrawDone!=0; sin PE el flag nunca subia
+801AC5D0	8041729C	__LCEnable	mtspr HID2 (0x398) y dcbz_l en 0xE0000000
+801AC6A0	80417368	LCEnable	llama a __LCEnable con interrupciones desactivadas
+801AC710	804173C8	LCLoadBlocks	mtspr DMA_U/DMA_L con ori 0x12 (carga RAM->LC)
+801AC740	804173EC	LCStoreBlocks	mtspr DMA_U/DMA_L con ori 0x2 (LC->RAM), llamada por LCStoreData
+801AC770	80417410	LCStoreData	bucle de 0x80 bloques sobre LCStoreBlocks
+801AC810	804174B0	LCQueueLength	mfspr HID2, bits 4-7
+801AC820	804174BC	LCQueueWait	mfspr HID2 y espera la cola DMA
