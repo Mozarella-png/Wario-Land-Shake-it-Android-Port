@@ -75,7 +75,7 @@ jobs:
           fi
           echo "Usando $SDKMANAGER"
           yes | "$SDKMANAGER" --licenses > /dev/null
-          "$SDKMANAGER" "platforms;android-35" "build-tools;35.0.0" "ndk;${NDK_VERSION}" "cmake;3.22.1"
+          "$SDKMANAGER" "platforms;android-35" "build-tools;35.0.0" "ndk;${NDK_VERSION}" "cmake;3.31.6"
 
       - name: Translate the game (WiiCompiled translator)
         run: |
