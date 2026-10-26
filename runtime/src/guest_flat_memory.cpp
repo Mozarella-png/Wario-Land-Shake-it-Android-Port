@@ -33,9 +33,28 @@
 #include <fcntl.h>
 #include <sys/mman.h>
 #include <unistd.h>
+#if defined(__ANDROID__)
+#include <sys/syscall.h>
+#endif
 #endif
 
 namespace GuestFlat {
+#if !defined(_WIN32)
+namespace {
+// memfd_create is declared by bionic only from API 30. The kernel has had it since 3.17, so Android
+// builds for older API levels call the syscall directly.
+int MemfdCreateGuestRam() {
+#if defined(__ANDROID__) && __ANDROID_API__ < 30
+#ifndef MFD_CLOEXEC
+#define MFD_CLOEXEC 0x0001U
+#endif
+    return static_cast<int>(syscall(__NR_memfd_create, "wiicompiled-guest-ram", MFD_CLOEXEC));
+#else
+    return memfd_create("wiicompiled-guest-ram", MFD_CLOEXEC);
+#endif
+}
+}  // namespace
+#endif
 #if !defined(MKW_GUEST_FLAT_FIXED_PAGE_SIZE)
 bool g_requiresCheckedAccess = false;
 #endif
@@ -571,7 +590,7 @@ void Initialize(const std::vector<RegionRequest>& regions) {
         // twice below (once here as the always-accessible host view, once per-region as the
         // guest view whose protection the fault handler controls), the same "one backing store,
         // two VA aliases" trick CreateFileMapping/MapViewOfFile(3) gives Windows.
-        section.fd = memfd_create("wiicompiled-guest-ram", MFD_CLOEXEC);
+        section.fd = MemfdCreateGuestRam();
         if (section.fd < 0) {
             throw std::runtime_error(LastErrorText("memfd_create for guest RAM"));
         }
