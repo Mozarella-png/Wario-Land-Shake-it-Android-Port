@@ -163,10 +163,11 @@ jobs:
         run: sudo apt-get update -qq && sudo apt-get install -y -qq ccache
 
       - name: Restore ccache
-        uses: actions/cache@v4
+        id: ccache
+        uses: actions/cache/restore@v4
         with:
           path: ${{ env.CCACHE_DIR }}
-          # Each run saves a new entry; restore-keys picks the latest one, so the cache keeps improving.
+          # Each run restores the latest entry and saves its own below, so the cache keeps improving.
           key: ccache-arm64-${{ github.run_id }}
           restore-keys: |
             ccache-arm64-
@@ -183,6 +184,14 @@ jobs:
           ccache --zero-stats
           gradle :app:assembleRelease --no-daemon --stacktrace
           ccache --show-stats
+
+      # Saved even when the build fails, so the objects compiled so far are reused on the next run.
+      - name: Save ccache
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ env.CCACHE_DIR }}
+          key: ccache-arm64-${{ github.run_id }}
 
       - uses: actions/upload-artifact@v4
         with:

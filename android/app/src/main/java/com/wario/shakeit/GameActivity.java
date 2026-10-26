@@ -158,7 +158,7 @@ public class GameActivity extends SDLActivity {
             if (controller != null) {
                 controller.hide(android.view.WindowInsets.Type.systemBars());
                 controller.setSystemBarsBehavior(
-                        android.view.WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BY_SWIPE);
+                        android.view.WindowInsetsController.BEHAVIOR_SHOW_BARS_BY_SWIPE);
             }
         } else {
             window.getDecorView().setSystemUiVisibility(
