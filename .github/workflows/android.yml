@@ -1,3 +1,6 @@
+# The game is not in this repository. The workflow reads a zip of the DATA folder of your disco from a
+# release named "game-data" in this repo (asset "game-data.zip"). Optionally, a repository secret
+# WARIO_DATA_URL can point to a direct link to the zip instead.
 name: Android APK
 
 # Builds Wario Land: Shake it! for Android (arm64-v8a) entirely on GitHub Actions.
@@ -38,38 +41,43 @@ jobs:
           sudo docker image prune --all --force || true
           echo "Después:"; df -h /
 
-      - name: Check the game secret
-        env:
-          WARIO_DATA_URL: ${{ secrets.WARIO_DATA_URL }}
-        run: |
-          if [ -z "$WARIO_DATA_URL" ]; then
-            echo "::error::Falta el secreto WARIO_DATA_URL (un .zip con la carpeta DATA de tu disco)."
-            exit 1
-          fi
-
       - name: Download and check main.dol
         env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           WARIO_DATA_URL: ${{ secrets.WARIO_DATA_URL }}
         run: |
           set -e
-          URL="$WARIO_DATA_URL"
-          if [[ "$URL" == *drive.google.com* ]]; then
-            ID=$(echo "$URL" | sed -E 's/.*[?&]id=([^&]+).*/\1/; s#.*/d/([^/?]+).*#\1#')
-            URL="https://drive.usercontent.google.com/download?id=${ID}&export=download&confirm=t"
+          mkdir -p /tmp/gamedata game
+          if [ -n "$WARIO_DATA_URL" ]; then
+            # Optional: a direct link (not Drive) to the zip.
+            URL="$WARIO_DATA_URL"
+            if [[ "$URL" == *drive.google.com* ]]; then
+              ID=$(echo "$URL" | sed -E 's/.*[?&]id=([^&]+).*/\1/; s#.*/d/([^/?]+).*#\1#')
+              URL="https://drive.usercontent.google.com/download?id=${ID}&export=download&confirm=t"
+            fi
+            curl -fL --retry 3 -o /tmp/game.zip "$URL" || true
+          else
+            # Default: the zip is uploaded as an asset of a release named "game-data" in this repo.
+            gh release download game-data -R "$GITHUB_REPOSITORY" -p "game-data.zip" -O /tmp/game.zip \
+              || { echo "::error::No encuentro el release 'game-data' con el archivo game-data.zip. Sube el zip ahí (ver android/README.md)."; exit 1; }
           fi
-          curl -fL --retry 3 -o /tmp/game.zip "$URL"
-          if ! unzip -tq /tmp/game.zip > /dev/null; then
-            echo "::error::La descarga no es un zip válido (Drive devolvió una página HTML). Revisa que el archivo esté compartido como 'Cualquiera con el enlace'."
+          if ! unzip -tq /tmp/game.zip > /dev/null 2>&1; then
+            echo "::error::La descarga no es un zip válido."
+            if [ -f /tmp/game.zip ]; then
+              echo "Primeros bytes de lo recibido (si es HTML, Drive bloqueó la descarga):"
+              head -c 400 /tmp/game.zip | tr -s ' \n' ' ' || true
+              echo
+              grep -qi "quota\|too many users" /tmp/game.zip && echo "::error::Drive tiene la cuota de descargas agotada para este archivo. Usa un release (game-data.zip)."
+              grep -qi "virus\|scan" /tmp/game.zip && echo "::error::Drive pide confirmar el escaneo de virus. Usa un release (game-data.zip)."
+            fi
             exit 1
           fi
-          mkdir -p /tmp/gamedata
           unzip -q /tmp/game.zip -d /tmp/gamedata
           DOL=$(find /tmp/gamedata -path '*/sys/main.dol' | head -n 1)
           if [ -z "$DOL" ]; then
             echo "::error::No encuentro sys/main.dol dentro del zip."
             exit 1
           fi
-          mkdir -p game
           cp "$DOL" game/main.dol
           echo "053be60dde84c8042f45ed2f4ba80c17efb2d20fedf95a414c2c7e37d336912a  game/main.dol" | sha256sum -c -
 

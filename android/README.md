@@ -15,8 +15,10 @@ Port Android del runtime (WarioRecomp) con:
    con el explorador de Android. El zip se descomprime una vez en la carpeta de la app y se comprueba (cabecera
    RWLE01 rev. 0 y SHA-256 de `main.dol`). Para cambiarlo más tarde, abre el menú ⚙ en el juego y pulsa
    **Cambiar datos del juego…**.
-2. **En GitHub (para compilar el APK):** crea el secreto `WARIO_DATA_URL` con un enlace directo a ese mismo `.zip`.
-   El workflow lo usa para traducir `main.dol` y compilar el juego. Los datos no van en el repositorio ni en el APK.
+2. **En GitHub (para compilar el APK):** crea un *release* llamado `game-data` en el repo y sube ahí el zip
+   con el nombre `game-data.zip` (Releases → Draft a new release → Attach binaries). El workflow lo descarga
+   con el token de GitHub, sin enlaces externos. Si prefieres un enlace directo, define el secreto
+   `WARIO_DATA_URL`; los enlaces de Google Drive suelen fallar por cuota de descargas.
 3. Ejecuta el workflow "Android APK". Al terminar, descarga el artefacto `wario-land-shake-it-apk`.
 
 ## Cómo llegan los datos al runtime
