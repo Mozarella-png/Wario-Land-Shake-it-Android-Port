@@ -1,6 +1,6 @@
-# The game is not in this repository. The workflow reads a zip of the DATA folder of your disco from a
-# release named "game-data" in this repo (asset "game-data.zip"). Optionally, a repository secret
-# WARIO_DATA_URL can point to a direct link to the zip instead.
+# The game is not in this repository. The workflow reads sys/main.dol from a release named "game-data"
+# in this repo (asset "main.dol"). Optionally, a repository secret WARIO_DATA_URL can point to a direct
+# link to a zip of the DATA folder instead.
 name: Android APK
 
 # Builds Wario Land: Shake it! for Android (arm64-v8a) entirely on GitHub Actions.
@@ -57,9 +57,11 @@ jobs:
             fi
             curl -fL --retry 3 -o /tmp/game.zip "$URL" || true
           else
-            # Default: the zip is uploaded as an asset of a release named "game-data" in this repo.
-            gh release download game-data -R "$GITHUB_REPOSITORY" -p "game-data.zip" -O /tmp/game.zip \
-              || { echo "::error::No encuentro el release 'game-data' con el archivo game-data.zip. Sube el zip ahí (ver android/README.md)."; exit 1; }
+            # Default: only sys/main.dol is uploaded (the build needs nothing else; the phone needs the full zip).
+            gh release download game-data -R "$GITHUB_REPOSITORY" -p "main.dol" -O game/main.dol \
+              || { echo "::error::No encuentro el release 'game-data' con el archivo main.dol. Sube ese archivo ahí (ver android/README.md)."; exit 1; }
+            echo "053be60dde84c8042f45ed2f4ba80c17efb2d20fedf95a414c2c7e37d336912a  game/main.dol" | sha256sum -c -
+            exit 0
           fi
           if ! unzip -tq /tmp/game.zip > /dev/null 2>&1; then
             echo "::error::La descarga no es un zip válido."
