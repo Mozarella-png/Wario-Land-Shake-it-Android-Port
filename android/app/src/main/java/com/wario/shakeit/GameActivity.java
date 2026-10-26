@@ -24,6 +24,12 @@ import java.io.OutputStream;
  */
 public class GameActivity extends SDLActivity {
 
+    // libmain.so holds the runtime and the JNI functions below. Load it explicitly, before any native
+    // call: if it fails, the error (missing library or unresolved symbol) is reported by dlopen.
+    static {
+        System.loadLibrary("main");
+    }
+
     /**
      * SDLActivity loads only "SDL3" by default. The runtime's JNI functions (android_bridge.cpp) live
      * in libmain.so, so it has to be loaded too, or every native call fails with UnsatisfiedLinkError.
