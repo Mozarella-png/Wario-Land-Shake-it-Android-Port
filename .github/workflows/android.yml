@@ -96,6 +96,9 @@ jobs:
             echo "ANDROID_NDK_LATEST_HOME=$NDK_PATH"
             echo "ANDROID_NDK=$NDK_PATH"
           } >> "$GITHUB_ENV"
+          # Some prebuilt dependency still links against an absolute NDK 29 path (liblog.so).
+          # Make that path resolve to the NDK 27 we use; the sysroot provides the same liblog.so for API 28.
+          sudo ln -sfn "$NDK_PATH" "$ANDROID_HOME/ndk/29.0.14206865"
 
       - name: Translate the game (WiiCompiled translator)
         run: |
