@@ -23,6 +23,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Free disk space on the runner
+        # The translated runtime and its object files need more room than the default runner image leaves free.
+        run: |
+          echo "Antes:"; df -h /
+          sudo rm -rf /opt/ghc /usr/local/share/boost /usr/share/swift /usr/local/.ghcup \
+            /opt/hostedtoolcache/CodeQL /usr/share/az_* /usr/lib/google-cloud-sdk \
+            /usr/local/lib/android/sdk/ndk /usr/local/lib/android/sdk/system-images \
+            /usr/local/lib/android/sdk/emulator || true
+          sudo docker image prune --all --force || true
+          echo "Después:"; df -h /
+
       - name: Check the game secret
         env:
           WARIO_DATA_URL: ${{ secrets.WARIO_DATA_URL }}
