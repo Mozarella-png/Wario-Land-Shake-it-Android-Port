@@ -36,6 +36,11 @@ android {
         }
     }
 
+    // The lint "vital" check runs with assembleRelease and is not needed for the APK; turning it off saves time.
+    lint {
+        checkReleaseBuilds = false
+    }
+
     externalNativeBuild {
         cmake {
             // The whole WarioRecomp runtime (and Aurora) builds from the repo's runtime/ folder.

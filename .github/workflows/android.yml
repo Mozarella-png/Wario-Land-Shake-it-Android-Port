@@ -181,9 +181,7 @@ jobs:
           WARIO_CCACHE: "1"
         run: |
           ccache --zero-stats
-          # The lint "vital" checks are not needed for the APK; skipping them saves time.
-          gradle :app:assembleRelease --no-daemon --stacktrace \
-            -x lintVitalAnalyzeRelease -x generateReleaseLintVitalReportModel
+          gradle :app:assembleRelease --no-daemon --stacktrace
           ccache --show-stats
 
       - uses: actions/upload-artifact@v4
