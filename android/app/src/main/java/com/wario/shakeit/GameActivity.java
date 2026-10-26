@@ -72,7 +72,6 @@ public class GameActivity extends SDLActivity {
             WindowInsetsController controller = getWindow().getInsetsController();
             if (controller != null) {
                 controller.hide(WindowInsets.Type.systemBars());
-                controller.setSystemBarsBehavior(WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BY_SWIPE);
             }
         }
     }
