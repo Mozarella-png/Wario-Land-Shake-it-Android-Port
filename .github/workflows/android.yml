@@ -87,6 +87,15 @@ jobs:
           echo "Usando $SDKMANAGER"
           yes | "$SDKMANAGER" --licenses > /dev/null
           "$SDKMANAGER" "platforms;android-35" "build-tools;35.0.0" "ndk;${NDK_VERSION}" "cmake;3.31.6"
+          # The runner sets ANDROID_NDK_HOME to its preinstalled NDK (which the cleanup step removed).
+          # Point every NDK variable at the NDK we just installed, so CMake links against it.
+          NDK_PATH="$ANDROID_HOME/ndk/${NDK_VERSION}"
+          {
+            echo "ANDROID_NDK_HOME=$NDK_PATH"
+            echo "ANDROID_NDK_ROOT=$NDK_PATH"
+            echo "ANDROID_NDK_LATEST_HOME=$NDK_PATH"
+            echo "ANDROID_NDK=$NDK_PATH"
+          } >> "$GITHUB_ENV"
 
       - name: Translate the game (WiiCompiled translator)
         run: |
