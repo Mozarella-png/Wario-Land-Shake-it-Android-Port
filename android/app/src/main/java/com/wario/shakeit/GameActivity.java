@@ -1,7 +1,9 @@
 package com.wario.shakeit;
 
+import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Process;
 import android.system.Os;
 import android.view.Gravity;
 import android.view.WindowInsets;
@@ -34,16 +36,35 @@ public class GameActivity extends SDLActivity {
 
     private TouchOverlay overlay;
 
+    /**
+     * Opens the picker for the game data (SetupActivity). The runtime reads the game folder once per
+     * process, so the game process is ended; SetupActivity runs in the app's main process and starts
+     * a fresh game once the new data is in place.
+     */
+    public void chooseGameData() {
+        Intent setup = new Intent(this, SetupActivity.class);
+        setup.putExtra(SetupActivity.EXTRA_CHOOSE, true);
+        setup.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        startActivity(setup);
+        finish();
+        Process.killProcess(Process.myPid());
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        // Without a valid game folder the runtime would fail at boot: go back to the picker instead.
+        if (!SetupActivity.dataReady(this)) {
+            startActivity(new Intent(this, SetupActivity.class));
+            finish();
+            return;
+        }
+
         // The runtime reads these before the game thread starts (runtime/src/platform/host_platform.cpp).
         try {
             File runtimeDir = unpackRuntime();
             Os.setenv("WIICOMPILED_RUNTIME_DIR", runtimeDir.getAbsolutePath(), true);
-            File dataDir = getExternalFilesDir(null);
-            if (dataDir != null) {
-                Os.setenv("WIICOMPILED_DATA_DIR", dataDir.getAbsolutePath(), true);
-            }
+            // Config.toml (with [paths] dvd_root, written by SetupActivity) lives here too.
+            Os.setenv("WIICOMPILED_DATA_DIR", SetupActivity.dataDir(this).getAbsolutePath(), true);
         } catch (Exception e) {
             throw new RuntimeException("No se pudieron preparar los archivos del runtime", e);
         }

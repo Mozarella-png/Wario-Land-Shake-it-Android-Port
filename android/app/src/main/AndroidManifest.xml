@@ -12,16 +12,25 @@
         android:supportsRtl="false"
         android:theme="@style/Theme.WarioShakeIt">
 
+        <!-- The launcher: asks for the game's data zip the first time (or when asked to change it). -->
         <activity
-            android:name=".GameActivity"
+            android:name=".SetupActivity"
             android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|uiMode|density|keyboard|navigation"
             android:exported="true"
-            android:launchMode="singleTask"
             android:screenOrientation="sensorLandscape">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- The game runs in its own process, so it can be restarted with another game folder. -->
+        <activity
+            android:name=".GameActivity"
+            android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|uiMode|density|keyboard|navigation"
+            android:exported="false"
+            android:launchMode="singleTask"
+            android:process=":game"
+            android:screenOrientation="sensorLandscape" />
     </application>
 </manifest>

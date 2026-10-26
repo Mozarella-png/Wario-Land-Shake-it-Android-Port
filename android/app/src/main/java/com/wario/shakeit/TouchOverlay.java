@@ -429,6 +429,14 @@ public class TouchOverlay extends View {
         actions.addView(done);
         box.addView(actions);
 
+        TextView changeData = label("Cambiar datos del juego…", 13);
+        changeData.setOnClickListener(v -> {
+            if (getContext() instanceof GameActivity) {
+                ((GameActivity) getContext()).chooseGameData();
+            }
+        });
+        box.addView(changeData);
+
         panel = box;
         panel.setVisibility(GONE);
         syncPanel();
