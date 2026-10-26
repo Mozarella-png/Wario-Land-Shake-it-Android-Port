@@ -5,6 +5,7 @@
     <uses-feature android:name="android.hardware.vulkan.level" android:required="false" />
 
     <application
+        android:name=".WarioApplication"
         android:allowBackup="false"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"

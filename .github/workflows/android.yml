@@ -17,6 +17,10 @@ jobs:
       SDL_VERSION: "3.4.4"        # same as AURORA_SDL3_VERSION in aurora/CMakeLists.txt
       NDK_VERSION: "27.0.12077973"
       WARIO_JOBS: "4"
+      # ccache keeps the C/C++ objects of the translated game between runs (see the cache step below).
+      CCACHE_DIR: /home/runner/.cache/ccache-wario
+      CCACHE_MAXSIZE: "3G"
+      CCACHE_BASEDIR: ${{ github.workspace }}
       # Android SDK preinstalled on the ubuntu-24.04 runner image.
       ANDROID_HOME: /usr/local/lib/android/sdk
       ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
@@ -128,13 +132,30 @@ jobs:
           mkdir -p android/app/src/main/java/org/libsdl
           cp -r "$SRC" android/app/src/main/java/org/libsdl/
 
+      - name: Install ccache
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq ccache
+
+      - name: Restore ccache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.CCACHE_DIR }}
+          # Each run saves a new entry; restore-keys picks the latest one, so the cache keeps improving.
+          key: ccache-arm64-${{ github.run_id }}
+          restore-keys: |
+            ccache-arm64-
+
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: "8.9"
 
       - name: Build the APK
         working-directory: android
-        run: gradle :app:assembleRelease --no-daemon --stacktrace
+        env:
+          WARIO_CCACHE: "1"
+        run: |
+          ccache --zero-stats
+          gradle :app:assembleRelease --no-daemon --stacktrace
+          ccache --show-stats
 
       - uses: actions/upload-artifact@v4
         with:

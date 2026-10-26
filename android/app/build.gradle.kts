@@ -27,6 +27,11 @@ android {
                 arguments += listOf("-DCMAKE_BUILD_TYPE=Release",
                     "-DAURORA_DAWN_PROVIDER=package",
                     "-DMKW_TRANSLATED_COMPILE_JOBS=" + (System.getenv("WARIO_JOBS") ?: "2"))
+                // CI sets WARIO_CCACHE=1 to cache C/C++ objects between runs. Local builds are unchanged.
+                if (System.getenv("WARIO_CCACHE") == "1") {
+                    arguments += listOf("-DCMAKE_C_COMPILER_LAUNCHER=ccache",
+                        "-DCMAKE_CXX_COMPILER_LAUNCHER=ccache")
+                }
             }
         }
     }

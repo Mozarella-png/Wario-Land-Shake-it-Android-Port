@@ -67,6 +67,11 @@ public class SetupActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         boolean choose = getIntent() != null && getIntent().getBooleanExtra(EXTRA_CHOOSE, false);
+        File crash = WarioApplication.crashFile(this);
+        if (crash.isFile()) {
+            showCrash(crash);
+            return;
+        }
         if (!choose && dataReady(this)) {
             startGame();
             return;
@@ -78,6 +83,47 @@ public class SetupActivity extends Activity {
             status.setText("Datos actuales: correctos. Elige otro zip para cambiarlos, o vuelve al juego.");
             play.setVisibility(View.VISIBLE);
         }
+    }
+
+    /** Shows the error saved by WarioApplication, so the player can report it, and offers to retry. */
+    private void showCrash(File crash) {
+        float density = getResources().getDisplayMetrics().density;
+        int pad = Math.round(16 * density);
+        String text;
+        try {
+            text = new String(java.nio.file.Files.readAllBytes(crash.toPath()), java.nio.charset.StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            text = "No se pudo leer el registro del error: " + e.getMessage();
+        }
+
+        LinearLayout root = new LinearLayout(this);
+        root.setOrientation(LinearLayout.VERTICAL);
+        root.setPadding(pad, pad, pad, pad);
+        root.setBackgroundColor(Color.BLACK);
+
+        TextView title = new TextView(this);
+        title.setText("La última vez el juego se cerró con un error. Copia este texto y envíalo para poder arreglarlo.");
+        title.setTextColor(Color.WHITE);
+        title.setTextSize(14);
+        root.addView(title);
+
+        android.widget.ScrollView scroll = new android.widget.ScrollView(this);
+        TextView body = new TextView(this);
+        body.setText(text);
+        body.setTextColor(0xFFFFAAAA);
+        body.setTextSize(11);
+        body.setTextIsSelectable(true);
+        scroll.addView(body);
+        root.addView(scroll, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f));
+
+        Button retry = new Button(this);
+        retry.setText("Borrar el error y reintentar");
+        retry.setOnClickListener(v -> {
+            crash.delete();
+            recreate();
+        });
+        root.addView(retry);
+        setContentView(root);
     }
 
     private void buildUi() {

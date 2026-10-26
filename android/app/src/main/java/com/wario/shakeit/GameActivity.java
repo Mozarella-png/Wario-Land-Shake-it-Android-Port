@@ -24,6 +24,15 @@ import java.io.OutputStream;
  */
 public class GameActivity extends SDLActivity {
 
+    /**
+     * SDLActivity loads only "SDL3" by default. The runtime's JNI functions (android_bridge.cpp) live
+     * in libmain.so, so it has to be loaded too, or every native call fails with UnsatisfiedLinkError.
+     */
+    @Override
+    protected String[] getLibraries() {
+        return new String[] {"SDL3", "main"};
+    }
+
     // Bump when the files under runtime/assets change, so installs unpack them again.
     private static final String RUNTIME_STAMP = "unpacked-1";
 
