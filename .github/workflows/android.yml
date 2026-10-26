@@ -104,7 +104,17 @@ jobs:
           # Make that path resolve to the NDK 27 we use; the sysroot provides the same liblog.so for API 28.
           sudo ln -sfn "$NDK_PATH" "$ANDROID_HOME/ndk/29.0.14206865"
 
+      # The translated code depends only on main.dol, the translator and the runtime sources,
+      # so a repeated run restores it instead of translating ~28k functions again.
+      - name: Restore translated code
+        id: gen
+        uses: actions/cache/restore@v4
+        with:
+          path: generated
+          key: translated-${{ hashFiles('game/main.dol', 'fw/translator/**', 'projects/wario/**', 'runtime/src/**') }}
+
       - name: Translate the game (WiiCompiled translator)
+        if: steps.gen.outputs.cache-hit != 'true'
         run: |
           dotnet build fw/translator/src/Translator.Cli/Translator.Cli.csproj -c Release
           TR="dotnet fw/translator/src/Translator.Cli/bin/Release/net8.0/Translator.Cli.dll"
@@ -121,6 +131,13 @@ jobs:
             --base-functions-dir generated/functions \
             --native-source-dir runtime/src \
             --out generated/build_shards
+
+      - name: Save translated code
+        if: steps.gen.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: generated
+          key: translated-${{ hashFiles('game/main.dol', 'fw/translator/**', 'projects/wario/**', 'runtime/src/**') }}
 
       - name: Get the SDL3 Java glue (matches the SDL3 the runtime builds)
         run: |
@@ -154,7 +171,9 @@ jobs:
           WARIO_CCACHE: "1"
         run: |
           ccache --zero-stats
-          gradle :app:assembleRelease --no-daemon --stacktrace
+          # The lint "vital" checks are not needed for the APK; skipping them saves time.
+          gradle :app:assembleRelease --no-daemon --stacktrace \
+            -x lintVitalAnalyzeRelease -x generateReleaseLintVitalReportModel
           ccache --show-stats
 
       - uses: actions/upload-artifact@v4

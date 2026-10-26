@@ -68,6 +68,7 @@ public class TouchOverlay extends View {
     private float lastX;
     private float lastY;
     private int lastButtons;
+    private final android.graphics.Path circlePath = new android.graphics.Path();
     private boolean lastShake;
 
     private View panel;
@@ -493,8 +494,14 @@ public class TouchOverlay extends View {
         boolean pressed = isPressed(c);
         int a = Math.round(alpha[c] * 255f);
         if (bitmaps[c] != null) {
+            // The art is square; clip it to the same circle the drawn fallback uses.
             bitmapPaint.setAlpha(pressed ? 255 : a);
+            canvas.save();
+            circlePath.reset();
+            circlePath.addOval(r, android.graphics.Path.Direction.CW);
+            canvas.clipPath(circlePath);
             canvas.drawBitmap(bitmaps[c], null, r, bitmapPaint);
+            canvas.restore();
         } else {
             fillPaint.setColor(Color.WHITE);
             fillPaint.setAlpha(pressed ? 110 : 40);
