@@ -38,10 +38,10 @@ public class TouchOverlay extends View {
     // Defaults as fractions of the screen (center x, center y), for a landscape phone.
     private static final float[] DEF_X = {0.11f, 0.82f, 0.93f, 0.70f, 0.94f, 0.84f, 0.50f};
     private static final float[] DEF_Y = {0.68f, 0.86f, 0.66f, 0.84f, 0.10f, 0.10f, 0.90f};
-    // Image per control; 0 means drawn in code (the A and - buttons have no artwork).
+    // Image per control (every control has artwork now; 0 would mean drawn in code).
     private static final int[] RES = {
-            R.drawable.joystick, R.drawable.btn_one, R.drawable.btn_two, 0,
-            R.drawable.btn_plus, 0, R.drawable.btn_shake};
+            R.drawable.joystick, R.drawable.btn_one, R.drawable.btn_two, R.drawable.btn_a,
+            R.drawable.btn_plus, R.drawable.btn_minus, R.drawable.btn_shake};
 
     private final SharedPreferences prefs;
     private final float density;
