@@ -75,8 +75,6 @@ public class GameActivity extends SDLActivity {
             return;
         }
 
-        hideSystemBars();
-
         // The runtime reads these before the game thread starts (runtime/src/platform/host_platform.cpp).
         try {
             File runtimeDir = unpackRuntime();
@@ -89,9 +87,9 @@ public class GameActivity extends SDLActivity {
 
         super.onCreate(savedInstanceState);
 
-        if (Build.VERSION.SDK_INT >= 30) {
-            getWindow().setDecorFitsSystemWindows(false);
-        }
+        // Must run after super.onCreate(): the window's decor view is only attached (and has its
+        // WindowInsetsController) once SDLActivity has set up the content view.
+        hideSystemBars();
 
         // Applies at the next frame; the game reads the aspect again only at boot.
         nativeApplyDisplaySettings(ASPECT_FILL, 0f, false);
@@ -151,17 +149,19 @@ public class GameActivity extends SDLActivity {
 
     /** Full-screen game: hides the status bar and the navigation buttons until the player swipes. */
     private void hideSystemBars() {
-        android.view.Window window = getWindow();
-        if (android.os.Build.VERSION.SDK_INT >= 30) {
-            window.setDecorFitsSystemWindows(false);
-            android.view.WindowInsetsController controller = window.getInsetsController();
+        android.view.View decor = getWindow().getDecorView();
+        if (Build.VERSION.SDK_INT >= 30) {
+            getWindow().setDecorFitsSystemWindows(false);
+            // View#getWindowInsetsController() returns null (instead of throwing) while the view is not
+            // attached. onWindowFocusChanged calls this again once the window has focus.
+            WindowInsetsController controller = decor.getWindowInsetsController();
             if (controller != null) {
-                controller.hide(android.view.WindowInsets.Type.systemBars());
+                controller.hide(WindowInsets.Type.systemBars());
                 controller.setSystemBarsBehavior(
-                        android.view.WindowInsetsController.BEHAVIOR_SHOW_BARS_BY_SWIPE);
+                        WindowInsetsController.BEHAVIOR_SHOW_BARS_BY_SWIPE);
             }
         } else {
-            window.getDecorView().setSystemUiVisibility(
+            decor.setSystemUiVisibility(
                     android.view.View.SYSTEM_UI_FLAG_LAYOUT_STABLE
                             | android.view.View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
                             | android.view.View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
