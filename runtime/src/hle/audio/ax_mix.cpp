@@ -37,6 +37,11 @@ std::filesystem::path FindDspCoefficientRom() {
         if (std::filesystem::is_regular_file(adjacent)) {
             return adjacent;
         }
+        // Android: the APK's assets/dsp folder is unpacked as <runtime dir>/dsp/ (GameActivity.copyAssets).
+        const auto unpackedAsset = *executableDirectory / "dsp" / "dsp_coef.bin";
+        if (std::filesystem::is_regular_file(unpackedAsset)) {
+            return unpackedAsset;
+        }
     }
 
     for (auto base = std::filesystem::current_path(); !base.empty();) {
