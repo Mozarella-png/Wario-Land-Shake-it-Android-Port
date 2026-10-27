@@ -495,6 +495,10 @@ gx::DrawData* get_last_draw_command() {
   if (g_currentRenderPass >= g_renderPasses.size()) {
     return nullptr;
   }
+  // back() on an empty vector is undefined behavior: the pass can exist before its first command.
+  if (g_renderPasses[g_currentRenderPass].commands.empty()) {
+    return nullptr;
+  }
   auto& last = g_renderPasses[g_currentRenderPass].commands.back();
   if (last.type != CommandType::Draw || last.data.draw.type != ShaderType::GX) {
     return nullptr;
