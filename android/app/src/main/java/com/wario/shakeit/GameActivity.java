@@ -4,7 +4,6 @@ import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Process;
-import android.system.Os;
 import android.view.Gravity;
 import android.view.WindowInsets;
 import android.view.WindowInsetsController;
@@ -12,11 +11,6 @@ import android.widget.FrameLayout;
 
 import org.libsdl.app.SDLActivity;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 
 /**
  * Hosts libmain.so (the WarioRecomp runtime) through SDL's Android activity and draws the touch
@@ -40,10 +34,6 @@ public class GameActivity extends SDLActivity {
         return new String[] {"main"};
     }
 
-    // Bump when the files under runtime/assets change, so installs unpack them again.
-    private static final String RUNTIME_STAMP = "unpacked-1";
-
-    // VideoAspect 2 = fill the screen: ultrawide phones draw wider; nothing is stretched.
     private static final int ASPECT_FILL = 2;
 
     // Implemented in runtime/src/android/android_bridge.cpp.
@@ -75,23 +65,16 @@ public class GameActivity extends SDLActivity {
             return;
         }
 
-        hideSystemBars();
+        // Lets the launcher tell failures of this run from older ones.
+        SetupActivity.touchStartMarker(this);
 
-        // The runtime reads these before the game thread starts (runtime/src/platform/host_platform.cpp).
-        try {
-            File runtimeDir = unpackRuntime();
-            Os.setenv("WIICOMPILED_RUNTIME_DIR", runtimeDir.getAbsolutePath(), true);
-            // Config.toml (with [paths] dvd_root, written by SetupActivity) lives here too.
-            Os.setenv("WIICOMPILED_DATA_DIR", SetupActivity.dataDir(this).getAbsolutePath(), true);
-        } catch (Exception e) {
-            throw new RuntimeException("No se pudieron preparar los archivos del runtime", e);
-        }
+        // The runtime environment (WIICOMPILED_*) is set in WarioApplication, before libmain.so loads.
 
         super.onCreate(savedInstanceState);
 
-        if (Build.VERSION.SDK_INT >= 30) {
-            getWindow().setDecorFitsSystemWindows(false);
-        }
+        // Must run after super.onCreate(): the window's decor view is only attached (and has its
+        // WindowInsetsController) once SDLActivity has set up the content view.
+        hideSystemBars();
 
         // Applies at the next frame; the game reads the aspect again only at boot.
         nativeApplyDisplaySettings(ASPECT_FILL, 0f, false);
@@ -113,55 +96,21 @@ public class GameActivity extends SDLActivity {
         super.onPause();
     }
 
-    // Copies runtime/assets (from the APK) into internal storage once per RUNTIME_STAMP.
-    private File unpackRuntime() throws IOException {
-        File root = new File(getFilesDir(), "runtime");
-        File stamp = new File(root, RUNTIME_STAMP);
-        if (!stamp.exists()) {
-            copyAssets("", root);
-            if (!root.exists() && !root.mkdirs()) {
-                throw new IOException("No se pudo crear " + root);
-            }
-            stamp.createNewFile();
-        }
-        return root;
-    }
-
-    private void copyAssets(String path, File dest) throws IOException {
-        String[] children = getAssets().list(path);
-        if (children != null && children.length > 0) {
-            dest.mkdirs();
-            for (String child : children) {
-                copyAssets(path.isEmpty() ? child : path + "/" + child, new File(dest, child));
-            }
-            return;
-        }
-        File parent = dest.getParentFile();
-        if (parent != null) {
-            parent.mkdirs();
-        }
-        try (InputStream in = getAssets().open(path); OutputStream out = new FileOutputStream(dest)) {
-            byte[] buffer = new byte[64 * 1024];
-            int n;
-            while ((n = in.read(buffer)) != -1) {
-                out.write(buffer, 0, n);
-            }
-        }
-    }
-
     /** Full-screen game: hides the status bar and the navigation buttons until the player swipes. */
     private void hideSystemBars() {
-        android.view.Window window = getWindow();
-        if (android.os.Build.VERSION.SDK_INT >= 30) {
-            window.setDecorFitsSystemWindows(false);
-            android.view.WindowInsetsController controller = window.getInsetsController();
+        android.view.View decor = getWindow().getDecorView();
+        if (Build.VERSION.SDK_INT >= 30) {
+            getWindow().setDecorFitsSystemWindows(false);
+            // View#getWindowInsetsController() returns null (instead of throwing) while the view is not
+            // attached. onWindowFocusChanged calls this again once the window has focus.
+            WindowInsetsController controller = decor.getWindowInsetsController();
             if (controller != null) {
-                controller.hide(android.view.WindowInsets.Type.systemBars());
+                controller.hide(WindowInsets.Type.systemBars());
                 controller.setSystemBarsBehavior(
-                        android.view.WindowInsetsController.BEHAVIOR_SHOW_BARS_BY_SWIPE);
+                        WindowInsetsController.BEHAVIOR_SHOW_BARS_BY_SWIPE);
             }
         } else {
-            window.getDecorView().setSystemUiVisibility(
+            decor.setSystemUiVisibility(
                     android.view.View.SYSTEM_UI_FLAG_LAYOUT_STABLE
                             | android.view.View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
                             | android.view.View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN

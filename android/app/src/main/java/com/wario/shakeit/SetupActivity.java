@@ -1,10 +1,13 @@
 package com.wario.shakeit;
 
 import android.app.Activity;
+import android.app.ActivityManager;
+import android.app.ApplicationExitInfo;
 import android.content.Intent;
 import android.database.Cursor;
 import android.graphics.Color;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -16,9 +19,11 @@ import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.List;
 
 /**
  * The launcher screen. If the game's data is already in place it starts the game at once; otherwise
@@ -50,6 +55,24 @@ public class SetupActivity extends Activity {
         return new File(dataDir(context), DataImporter.CONFIG_FILE);
     }
 
+    /** Written each time the game process starts; failures older than this are already seen. */
+    static File startMarker(android.content.Context context) {
+        return new File(dataDir(context), "game_started");
+    }
+
+    static void touchStartMarker(android.content.Context context) {
+        File marker = startMarker(context);
+        try {
+            dataDir(context).mkdirs();
+            if (!marker.exists()) {
+                marker.createNewFile();
+            }
+        } catch (IOException ignored) {
+            // Only used to hide old errors; a missing marker just shows them again.
+        }
+        marker.setLastModified(System.currentTimeMillis());
+    }
+
     /** True when Config.toml points at a valid game folder. */
     static boolean dataReady(android.content.Context context) {
         try {
@@ -69,8 +92,20 @@ public class SetupActivity extends Activity {
         boolean choose = getIntent() != null && getIntent().getBooleanExtra(EXTRA_CHOOSE, false);
         File crash = WarioApplication.crashFile(this);
         if (crash.isFile()) {
-            showCrash(crash);
-            return;
+            // A report older than the last game start belongs to a build or run that is already gone.
+            File marker = startMarker(this);
+            if (!marker.isFile() || crash.lastModified() > marker.lastModified()) {
+                showReport(readText(crash), crash);
+                return;
+            }
+            crash.delete();
+        }
+        if (!choose) {
+            String failure = lastGameFailure();
+            if (failure != null) {
+                showReport(failure, null);
+                return;
+            }
         }
         if (!choose && dataReady(this)) {
             startGame();
@@ -85,16 +120,12 @@ public class SetupActivity extends Activity {
         }
     }
 
-    /** Shows the error saved by WarioApplication, so the player can report it, and offers to retry. */
-    private void showCrash(File crash) {
+    /**
+     * Shows an error report so the player can copy it. crashToDelete (the Java crash file) is removed on retry.
+     */
+    private void showReport(String text, File crashToDelete) {
         float density = getResources().getDisplayMetrics().density;
         int pad = Math.round(16 * density);
-        String text;
-        try {
-            text = new String(java.nio.file.Files.readAllBytes(crash.toPath()), java.nio.charset.StandardCharsets.UTF_8);
-        } catch (IOException e) {
-            text = "No se pudo leer el registro del error: " + e.getMessage();
-        }
 
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
@@ -119,11 +150,103 @@ public class SetupActivity extends Activity {
         Button retry = new Button(this);
         retry.setText("Borrar el error y reintentar");
         retry.setOnClickListener(v -> {
-            crash.delete();
+            if (crashToDelete != null) {
+                crashToDelete.delete();
+            }
+            touchStartMarker(this);
             recreate();
         });
         root.addView(retry);
         setContentView(root);
+    }
+
+    private static String readText(File file) {
+        try {
+            return new String(java.nio.file.Files.readAllBytes(file.toPath()), java.nio.charset.StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            return "No se pudo leer el registro del error: " + e.getMessage();
+        }
+    }
+
+    /**
+     * Why the last game run stopped, or null if it did not fail. Covers fatal errors the runtime wrote to
+     * Logs/<run>/crash_*.txt (which the runtime otherwise only shows as a popup on Windows), and on
+     * Android 11+ native crashes and exits with an error code, which otherwise close the app silently.
+     */
+    private String lastGameFailure() {
+        File marker = startMarker(this);
+        long since = marker.isFile() ? marker.lastModified() : 0L;
+
+        File newest = null;
+        File[] runs = new File(dataDir(this), "Logs").listFiles();
+        if (runs != null) {
+            for (File run : runs) {
+                File[] reports = run.listFiles((dir, name) -> name.startsWith("crash_") && name.endsWith(".txt"));
+                if (reports == null) {
+                    continue;
+                }
+                for (File report : reports) {
+                    if (report.lastModified() > since
+                            && (newest == null || report.lastModified() > newest.lastModified())) {
+                        newest = report;
+                    }
+                }
+            }
+        }
+        if (newest != null) {
+            return readText(newest);
+        }
+        if (Build.VERSION.SDK_INT >= 30) {
+            return exitReasonOfGame(since);
+        }
+        return null;
+    }
+
+    private String exitReasonOfGame(long since) {
+        if (Build.VERSION.SDK_INT < 30) {
+            return null;
+        }
+        ActivityManager am = (ActivityManager) getSystemService(ACTIVITY_SERVICE);
+        if (am == null) {
+            return null;
+        }
+        // Most recent first.
+        List<ApplicationExitInfo> exits = am.getHistoricalProcessExitReasons(getPackageName(), 0, 8);
+        for (ApplicationExitInfo info : exits) {
+            String process = info.getProcessName();
+            if (process == null || !process.endsWith(":game")) {
+                continue;
+            }
+            if (info.getTimestamp() < since) {
+                break;
+            }
+            int reason = info.getReason();
+            boolean failed = reason == ApplicationExitInfo.REASON_CRASH_NATIVE
+                    || reason == ApplicationExitInfo.REASON_CRASH
+                    || (reason == ApplicationExitInfo.REASON_EXIT_SELF && info.getStatus() != 0);
+            if (!failed) {
+                return null;
+            }
+            StringBuilder text = new StringBuilder();
+            text.append("El juego se cerró por un error del sistema.\n")
+                    .append("Motivo: ").append(String.valueOf(info.getDescription()))
+                    .append("\nCódigo: ").append(info.getStatus()).append("\n");
+            try (InputStream trace = info.getTraceInputStream()) {
+                if (trace != null) {
+                    ByteArrayOutputStream out = new ByteArrayOutputStream();
+                    byte[] buffer = new byte[4096];
+                    int n;
+                    while (out.size() < 32 * 1024 && (n = trace.read(buffer)) != -1) {
+                        out.write(buffer, 0, n);
+                    }
+                    text.append("\n").append(out.toString("UTF-8"));
+                }
+            } catch (IOException ignored) {
+                // The trace is optional; the reason above is still useful.
+            }
+            return text.toString();
+        }
+        return null;
     }
 
     private void buildUi() {
