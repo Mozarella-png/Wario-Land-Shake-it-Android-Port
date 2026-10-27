@@ -42,6 +42,7 @@
 #include <dbghelp.h>
 #else
 #include <signal.h>
+#include <unwind.h>
 #if defined(__x86_64__)
 // Only the x86 POSIX fault path inspects ucontext_t to recover the page-fault
 // write bit. macOS exposes the signal-handler context through sys/ucontext.h;
@@ -770,6 +771,38 @@ void SetRuntimeExitCodeImpl(int code) {
 
 namespace {
 
+#if !defined(_WIN32)
+// Walks the host stack with the system unwinder (bionic on Android, libgcc/libunwind elsewhere).
+// Prints raw program counters: the release .so is stripped, so resolve them offline with
+//   llvm-addr2line -f -e libmain.so <pc>      (or ndk-stack -sym <dir with unstripped .so>)
+// The "lib base" line gives the offset to subtract when the library was loaded at a random base.
+struct HostBacktraceState {
+    int frames = 0;
+};
+
+_Unwind_Reason_Code HostBacktraceCallback(struct _Unwind_Context* ctx, void* arg) {
+    auto* st = static_cast<HostBacktraceState*>(arg);
+    const uintptr_t pc = static_cast<uintptr_t>(_Unwind_GetIP(ctx));
+    if (pc == 0 || st->frames >= 48) {
+        return _URC_END_OF_STACK;
+    }
+    std::fprintf(stderr, "[runtime]   host#%d pc=0x%llx\n", st->frames,
+                 static_cast<unsigned long long>(pc));
+    ++st->frames;
+    return _URC_NO_REASON;
+}
+
+void PrintHostBacktrace() {
+    HostBacktraceState state;
+    std::fprintf(stderr, "[runtime] Host backtrace (raw PCs):\n");
+    _Unwind_Backtrace(&HostBacktraceCallback, &state);
+    if (state.frames == 0) {
+        std::fprintf(stderr, "[runtime]   (no frames: the unwinder could not walk this stack)\n");
+    }
+    std::fflush(stderr);
+}
+#endif
+
 void DumpHostStackTrace() {
 #if defined(_WIN32)
     static std::atomic_flag s_inProgress = ATOMIC_FLAG_INIT;
@@ -781,8 +814,13 @@ void DumpHostStackTrace() {
     std::fflush(stderr);
     s_inProgress.clear();
 #else
-    RT_LOGF(RT_TAG_RUNTIME, "Host stack trace unavailable on this platform\n");
-    std::fflush(stderr);
+    // Re-entrancy guard: a crash while unwinding must not recurse.
+    static std::atomic_flag s_inProgress = ATOMIC_FLAG_INIT;
+    if (s_inProgress.test_and_set()) {
+        return;
+    }
+    PrintHostBacktrace();
+    s_inProgress.clear();
 #endif
 }
 
