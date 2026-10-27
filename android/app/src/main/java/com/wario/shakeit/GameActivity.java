@@ -41,7 +41,7 @@ public class GameActivity extends SDLActivity {
     }
 
     // Bump when the files under runtime/assets change, so installs unpack them again.
-    private static final String RUNTIME_STAMP = "unpacked-1";
+    private static final String RUNTIME_STAMP = "unpacked-2";
 
     // VideoAspect 2 = fill the screen: ultrawide phones draw wider; nothing is stretched.
     private static final int ASPECT_FILL = 2;
@@ -123,6 +123,10 @@ public class GameActivity extends SDLActivity {
             if (!root.exists() && !root.mkdirs()) {
                 throw new IOException("No se pudo crear " + root);
             }
+            // The runtime looks for its Wii bootstrap NAND in <runtime dir>/wii_bootstrap (the
+            // desktop build copies it there). Without it, NAND init fails with "Unable to initialize
+            // managed NAND", so place the assets in that folder too.
+            copyAssets("wii", new File(root, "wii_bootstrap"));
             stamp.createNewFile();
         }
         return root;
