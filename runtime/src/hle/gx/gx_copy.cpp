@@ -142,10 +142,13 @@ PPC_NATIVE_OVERRIDE_VOID(80403B1C, GX__SetDispCopyGamma_8016fc24, (uint32_t g), 
 
 extern "C" void GX__CopyDisp_8016fc38(uint32_t da, uint32_t c) {
     EnsureAuroraFrameActive();
-    // Without an active frame (the GPU surface is not ready yet, for example while the app is starting
-    // or paused on Android) the renderer has no frame buffer to copy into. Calling GXCopyDisp then
-    // dereferences those missing objects and crashes. Skip this copy: the next frame retries.
     if (!g_auroraFrameActive.load(std::memory_order_acquire)) {
+        // No Aurora frame yet (the GPU surface is not ready, for example during startup on Android).
+        // The GPU copy would touch missing frame-buffer objects and crash, so skip it. The guest still
+        // needs its frame and XFB signals or its retrace wait never ends, so those still run.
+        ++g_gxFrameCount;
+        VI_HLE_SetXfbReady(da);
+        VI_HLE_PresentFrame(/*presentedXfb=*/false, /*paceToRetrace=*/true);
         return;
     }
     // GX copies are FIFO-ordered on hardware. Drain submitted draws before
