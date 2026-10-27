@@ -4,7 +4,6 @@ import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Process;
-import android.system.Os;
 import android.view.Gravity;
 import android.view.WindowInsets;
 import android.view.WindowInsetsController;
@@ -12,11 +11,6 @@ import android.widget.FrameLayout;
 
 import org.libsdl.app.SDLActivity;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 
 /**
  * Hosts libmain.so (the WarioRecomp runtime) through SDL's Android activity and draws the touch
@@ -40,10 +34,6 @@ public class GameActivity extends SDLActivity {
         return new String[] {"main"};
     }
 
-    // Bump when the files under runtime/assets change, so installs unpack them again.
-    private static final String RUNTIME_STAMP = "unpacked-2";
-
-    // VideoAspect 2 = fill the screen: ultrawide phones draw wider; nothing is stretched.
     private static final int ASPECT_FILL = 2;
 
     // Implemented in runtime/src/android/android_bridge.cpp.
@@ -78,15 +68,7 @@ public class GameActivity extends SDLActivity {
         // Lets the launcher tell failures of this run from older ones.
         SetupActivity.touchStartMarker(this);
 
-        // The runtime reads these before the game thread starts (runtime/src/platform/host_platform.cpp).
-        try {
-            File runtimeDir = unpackRuntime();
-            Os.setenv("WIICOMPILED_RUNTIME_DIR", runtimeDir.getAbsolutePath(), true);
-            // Config.toml (with [paths] dvd_root, written by SetupActivity) lives here too.
-            Os.setenv("WIICOMPILED_DATA_DIR", SetupActivity.dataDir(this).getAbsolutePath(), true);
-        } catch (Exception e) {
-            throw new RuntimeException("No se pudieron preparar los archivos del runtime", e);
-        }
+        // The runtime environment (WIICOMPILED_*) is set in WarioApplication, before libmain.so loads.
 
         super.onCreate(savedInstanceState);
 
@@ -112,46 +94,6 @@ public class GameActivity extends SDLActivity {
             overlay.releaseAll();
         }
         super.onPause();
-    }
-
-    // Copies runtime/assets (from the APK) into internal storage once per RUNTIME_STAMP.
-    private File unpackRuntime() throws IOException {
-        File root = new File(getFilesDir(), "runtime");
-        File stamp = new File(root, RUNTIME_STAMP);
-        if (!stamp.exists()) {
-            copyAssets("", root);
-            if (!root.exists() && !root.mkdirs()) {
-                throw new IOException("No se pudo crear " + root);
-            }
-            // The runtime looks for its Wii bootstrap NAND in <runtime dir>/wii_bootstrap (the
-            // desktop build copies it there). Without it, NAND init fails with "Unable to initialize
-            // managed NAND", so place the assets in that folder too.
-            copyAssets("wii", new File(root, "wii_bootstrap"));
-            stamp.createNewFile();
-        }
-        return root;
-    }
-
-    private void copyAssets(String path, File dest) throws IOException {
-        String[] children = getAssets().list(path);
-        if (children != null && children.length > 0) {
-            dest.mkdirs();
-            for (String child : children) {
-                copyAssets(path.isEmpty() ? child : path + "/" + child, new File(dest, child));
-            }
-            return;
-        }
-        File parent = dest.getParentFile();
-        if (parent != null) {
-            parent.mkdirs();
-        }
-        try (InputStream in = getAssets().open(path); OutputStream out = new FileOutputStream(dest)) {
-            byte[] buffer = new byte[64 * 1024];
-            int n;
-            while ((n = in.read(buffer)) != -1) {
-                out.write(buffer, 0, n);
-            }
-        }
     }
 
     /** Full-screen game: hides the status bar and the navigation buttons until the player swipes. */
