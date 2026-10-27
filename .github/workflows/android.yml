@@ -11,6 +11,11 @@ name: Android APK
 
 on:
   workflow_dispatch:
+    inputs:
+      reuse_translation:
+        description: "Reusar la última traducción guardada (rápido: solo regenera los shards con el runtime actual). Úsalo para cambios solo en runtime/; NO si cambió el juego, el traductor o projects/wario."
+        type: boolean
+        default: false
 
 jobs:
   build-apk:
@@ -40,6 +45,14 @@ jobs:
             /usr/local/lib/android/sdk/emulator || true
           sudo docker image prune --all --force || true
           echo "Después:"; df -h /
+
+      # The NDK is about 1.5 GB. Cache it after the cleanup above (which removes the preinstalled NDK),
+      # so repeated runs restore it from the cache instead of downloading it again from Google.
+      - name: Cache NDK
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.ANDROID_HOME }}/ndk/${{ env.NDK_VERSION }}
+          key: android-ndk-${{ env.NDK_VERSION }}
 
       - name: Download and check main.dol
         env:
@@ -100,7 +113,12 @@ jobs:
           fi
           echo "Usando $SDKMANAGER"
           yes | "$SDKMANAGER" --licenses > /dev/null
-          "$SDKMANAGER" "platforms;android-35" "build-tools;35.0.0" "ndk;${NDK_VERSION}" "cmake;3.31.6"
+          if [ -d "$ANDROID_HOME/ndk/${NDK_VERSION}" ]; then
+            # Restored from the cache: only the other packages are missing (or already present).
+            "$SDKMANAGER" "platforms;android-35" "build-tools;35.0.0" "cmake;3.31.6"
+          else
+            "$SDKMANAGER" "platforms;android-35" "build-tools;35.0.0" "ndk;${NDK_VERSION}" "cmake;3.31.6"
+          fi
           # The runner sets ANDROID_NDK_HOME to its preinstalled NDK (which the cleanup step removed).
           # Point every NDK variable at the NDK we just installed, so CMake links against it.
           NDK_PATH="$ANDROID_HOME/ndk/${NDK_VERSION}"
@@ -122,9 +140,13 @@ jobs:
         with:
           path: generated
           key: translated-${{ hashFiles('game/main.dol', 'fw/translator/**', 'projects/wario/**', 'runtime/src/**') }}
+          # Fallback used only with reuse_translation: the newest translation saved by an earlier run.
+          restore-keys: |
+            translated-
 
+      # Full translation: only when there is no usable cache, or when reuse_translation is off and the key missed.
       - name: Translate the game (WiiCompiled translator)
-        if: steps.gen.outputs.cache-hit != 'true'
+        if: steps.gen.outputs.cache-hit != 'true' && (inputs.reuse_translation != true || steps.gen.outputs.cache-matched-key == '')
         run: |
           dotnet build fw/translator/src/Translator.Cli/Translator.Cli.csproj -c Release
           TR="dotnet fw/translator/src/Translator.Cli/bin/Release/net8.0/Translator.Cli.dll"
@@ -142,8 +164,24 @@ jobs:
             --native-source-dir runtime/src \
             --out generated/build_shards
 
+      # Fast path (reuse_translation=true): keep the restored translation and rebuild only the shards,
+      # which depend on runtime/src (native registration). Not saved back to the cache: the cache keeps
+      # translations that were produced from their own runtime version.
+      - name: Regenerate build shards with the current runtime (reuse_translation)
+        if: steps.gen.outputs.cache-hit != 'true' && inputs.reuse_translation == true && steps.gen.outputs.cache-matched-key != ''
+        run: |
+          echo "::notice::Reutilizando la traducción de la clave: ${{ steps.gen.outputs.cache-matched-key }}"
+          dotnet build fw/translator/src/Translator.Cli/Translator.Cli.csproj -c Release
+          TR="dotnet fw/translator/src/Translator.Cli/bin/Release/net8.0/Translator.Cli.dll"
+          P=projects/wario/recomp.yml
+          $TR emit-build-shards --project $P \
+            --base-metadata generated/base_translation_output.json \
+            --base-functions-dir generated/functions \
+            --native-source-dir runtime/src \
+            --out generated/build_shards
+
       - name: Save translated code
-        if: steps.gen.outputs.cache-hit != 'true'
+        if: steps.gen.outputs.cache-hit != 'true' && inputs.reuse_translation != true
         uses: actions/cache/save@v4
         with:
           path: generated
