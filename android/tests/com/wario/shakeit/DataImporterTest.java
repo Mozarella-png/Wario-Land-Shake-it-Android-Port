@@ -97,7 +97,7 @@ public class DataImporterTest {
         e = importErr(zip(gameEntries("DATA/", "RMCE01", 0, dol)), tmp("id"), sha);
         check(e != null && e.contains("RMCE01"), "wrong game id rejected: " + e);
         e = importErr(zip(gameEntries("DATA/", "RWLE01", 1, dol)), tmp("rev"), sha);
-        check(e != null && e.contains("revisión 1"), "wrong revision rejected: " + e);
+        check(e != null && e.contains("revision 1"), "wrong revision rejected: " + e);
         e = importErr(zip(gameEntries("DATA/", "RWLE01", 0, "other".getBytes())), tmp("sha"), sha);
         check(e != null && e.contains("SHA-256"), "wrong main.dol rejected: " + e);
         Map<String, byte[]> nodol = gameEntries("DATA/", "RWLE01", 0, dol);

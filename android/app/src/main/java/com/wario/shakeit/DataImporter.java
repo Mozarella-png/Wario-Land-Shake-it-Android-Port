@@ -57,43 +57,43 @@ public final class DataImporter {
     /** As {@link #problem(File)}, with another main.dol checksum (tests use a synthetic one). */
     static String problem(File root, String dolSha256) {
         if (!new File(root, "files").isDirectory()) {
-            return "Falta la carpeta files/ dentro del zip.";
+            return "The files/ folder is missing from the zip.";
         }
         if (!new File(root, "sys/fst.bin").isFile()) {
-            return "Falta sys/fst.bin dentro del zip.";
+            return "sys/fst.bin is missing from the zip.";
         }
         File boot = new File(root, "sys/boot.bin");
         if (!boot.isFile()) {
-            return "Falta sys/boot.bin dentro del zip.";
+            return "sys/boot.bin is missing from the zip.";
         }
         byte[] header;
         try {
             header = readFirst(boot, 8);
         } catch (IOException e) {
-            return "No se pudo leer sys/boot.bin.";
+            return "Could not read sys/boot.bin.";
         }
         if (header.length < 8) {
-            return "sys/boot.bin está incompleto.";
+            return "sys/boot.bin is incomplete.";
         }
         String id = new String(header, 0, 6, StandardCharsets.US_ASCII);
         int revision = header[7] & 0xff;
         if (!GAME_ID.equals(id)) {
-            return "Ese disco es " + id + ", y este port solo funciona con " + GAME_ID + ".";
+            return "This disc is " + id + ", but this port only works with " + GAME_ID + ".";
         }
         if (revision != GAME_REVISION) {
-            return "Es la revisión " + revision + " del juego; el port solo funciona con la revisión "
+            return "This is revision " + revision + " of the game; the port only works with revision "
                     + GAME_REVISION + ".";
         }
         File dol = new File(root, "sys/main.dol");
         if (!dol.isFile()) {
-            return "Falta sys/main.dol dentro del zip.";
+            return "sys/main.dol is missing from the zip.";
         }
         try {
             if (!sha256(dol).equalsIgnoreCase(dolSha256)) {
-                return "sys/main.dol no es el de este port (la suma SHA-256 no coincide).";
+                return "sys/main.dol is not the one for this port (the SHA-256 does not match).";
             }
         } catch (IOException e) {
-            return "No se pudo leer sys/main.dol.";
+            return "Could not read sys/main.dol.";
         }
         return null;
     }
@@ -113,12 +113,12 @@ public final class DataImporter {
     static File importZip(InputStream zip, long zipSize, File dataDir, String dolSha256,
                           Listener listener) throws IOException {
         if (!dataDir.isDirectory() && !dataDir.mkdirs()) {
-            throw new IOException("No se pudo crear " + dataDir);
+            throw new IOException("Could not create " + dataDir);
         }
         File staging = new File(dataDir, STAGING_FOLDER);
         deleteRecursively(staging);
         if (!staging.mkdirs()) {
-            throw new IOException("No se pudo crear " + staging);
+            throw new IOException("Could not create " + staging);
         }
 
         CountingInputStream counted = new CountingInputStream(zip, zipSize, listener);
@@ -131,13 +131,13 @@ public final class DataImporter {
                 }
                 if (entry.isDirectory()) {
                     if (!target.isDirectory() && !target.mkdirs()) {
-                        throw new IOException("No se pudo crear " + target.getName());
+                        throw new IOException("Could not create " + target.getName());
                     }
                     continue;
                 }
                 File parent = target.getParentFile();
                 if (parent != null && !parent.isDirectory() && !parent.mkdirs()) {
-                    throw new IOException("No se pudo crear " + parent.getName());
+                    throw new IOException("Could not create " + parent.getName());
                 }
                 try (OutputStream out = new FileOutputStream(target)) {
                     byte[] buffer = new byte[64 * 1024];
@@ -149,15 +149,15 @@ public final class DataImporter {
             }
         } catch (IOException e) {
             deleteRecursively(staging);
-            throw new IOException("No se pudo descomprimir el zip: " + e.getMessage(), e);
+            throw new IOException("Could not unpack the zip: " + e.getMessage(), e);
         }
 
-        report(listener, 1f, "Comprobando el juego…");
+        report(listener, 1f, "Checking the game…");
         File root = findRoot(staging);
         if (root == null) {
             deleteRecursively(staging);
-            throw new IOException("No encuentro sys/main.dol dentro del zip. Debe contener la carpeta "
-                    + "DATA de tu disco (sys/ y files/).");
+            throw new IOException("sys/main.dol was not found in the zip. It must contain the "
+                    + "DATA folder of your disc (sys/ and files/).");
         }
         String problem = problem(root, dolSha256);
         if (problem != null) {
@@ -169,7 +169,7 @@ public final class DataImporter {
         deleteRecursively(finalDir);
         if (!root.renameTo(finalDir)) {
             deleteRecursively(staging);
-            throw new IOException("No se pudo mover los datos a " + finalDir);
+            throw new IOException("Could not move the data to " + finalDir);
         }
         deleteRecursively(staging);
         return finalDir;
@@ -292,10 +292,83 @@ public final class DataImporter {
             }
         }
         if (config.exists() && !config.delete()) {
-            throw new IOException("No se pudo reemplazar " + config.getName());
+            throw new IOException("Could not replace " + config.getName());
         }
         if (!tmp.renameTo(config)) {
-            throw new IOException("No se pudo guardar " + config.getName());
+            throw new IOException("Could not save " + config.getName());
+        }
+    }
+
+    /** Reads [section] key from Config.toml as a raw value (e.g. "true"), or null when it is not set. */
+    public static String readSetting(File config, String section, String key) throws IOException {
+        if (!config.isFile()) {
+            return null;
+        }
+        boolean inSection = false;
+        for (String line : readLines(config)) {
+            String t = line.trim();
+            if (t.startsWith("[")) {
+                inSection = t.equals("[" + section + "]");
+                continue;
+            }
+            if (inSection && isKeyLine(t, key)) {
+                String value = t.substring(t.indexOf('=') + 1).trim();
+                int hash = value.indexOf('#');
+                return (hash >= 0 ? value.substring(0, hash) : value).trim();
+            }
+        }
+        return null;
+    }
+
+    /** Sets [section] key = rawValue in Config.toml, keeping every other line as it is. */
+    public static void writeSetting(File config, String section, String key, String rawValue) throws IOException {
+        List<String> lines = config.isFile() ? readLines(config) : new ArrayList<String>();
+        String keyLine = key + " = " + rawValue;
+
+        int header = -1;
+        for (int i = 0; i < lines.size(); i++) {
+            if (lines.get(i).trim().equals("[" + section + "]")) {
+                header = i;
+                break;
+            }
+        }
+        if (header < 0) {
+            if (!lines.isEmpty() && !lines.get(lines.size() - 1).trim().isEmpty()) {
+                lines.add("");
+            }
+            lines.add("[" + section + "]");
+            lines.add(keyLine);
+        } else {
+            int found = -1;
+            for (int i = header + 1; i < lines.size(); i++) {
+                String t = lines.get(i).trim();
+                if (t.startsWith("[")) {
+                    break;
+                }
+                if (isKeyLine(t, key)) {
+                    found = i;
+                    break;
+                }
+            }
+            if (found >= 0) {
+                lines.set(found, keyLine);
+            } else {
+                lines.add(header + 1, keyLine);
+            }
+        }
+
+        File tmp = new File(config.getParentFile(), config.getName() + ".tmp");
+        try (OutputStreamWriter out = new OutputStreamWriter(new FileOutputStream(tmp), StandardCharsets.UTF_8)) {
+            for (String line : lines) {
+                out.write(line);
+                out.write("\n");
+            }
+        }
+        if (config.exists() && !config.delete()) {
+            throw new IOException("Could not replace " + config.getName());
+        }
+        if (!tmp.renameTo(config)) {
+            throw new IOException("Could not save " + config.getName());
         }
     }
 
@@ -408,7 +481,7 @@ public final class DataImporter {
             if (total > 0 && read - lastReport >= 1024 * 1024) {
                 lastReport = read;
                 report(listener, Math.min(1f, read / (float) total) * 0.99f,
-                        "Descomprimiendo… " + (int) (Math.min(1f, read / (float) total) * 100) + " %");
+                        "Unpacking… " + (int) (Math.min(1f, read / (float) total) * 100) + " %");
             }
         }
 

@@ -1,5 +1,6 @@
 package com.wario.shakeit;
 
+import java.io.File;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
@@ -373,7 +374,7 @@ public class TouchOverlay extends View {
         bg.setCornerRadius(dp(14));
         box.setBackground(bg);
 
-        box.addView(label("Editar controles", 16));
+        box.addView(label("Edit controls", 16));
 
         LinearLayout chipRow = new LinearLayout(ctx);
         chipRow.setOrientation(LinearLayout.HORIZONTAL);
@@ -415,22 +416,40 @@ public class TouchOverlay extends View {
                 }
             }
         });
-        box.addView(label("Tamaño", 13));
+        box.addView(label("Size", 13));
         box.addView(sizeBar);
-        box.addView(label("Opacidad", 13));
+        box.addView(label("Opacity", 13));
         box.addView(opacityBar);
 
         LinearLayout actions = new LinearLayout(ctx);
         actions.setOrientation(LinearLayout.HORIZONTAL);
-        TextView reset = label("Restaurar", 14);
+        TextView reset = label("Reset", 14);
         reset.setOnClickListener(v -> resetAll());
-        TextView done = label("Listo", 14);
+        TextView done = label("Done", 14);
         done.setOnClickListener(v -> setEditing(false));
         actions.addView(reset);
         actions.addView(done);
         box.addView(actions);
 
-        TextView changeData = label("Cambiar datos del juego…", 13);
+        // Full 16:9 in levels (the runtime reads [video] full_widescreen once, at startup).
+        File wideConfig = SetupActivity.configFile(getContext());
+        TextView wide = label(wideLabel(wideConfig), 13);
+        wide.setOnClickListener(v -> {
+            boolean on = !isWideOn(wideConfig);
+            try {
+                DataImporter.writeSetting(wideConfig, "video", "full_widescreen", on ? "true" : "false");
+            } catch (java.io.IOException e) {
+                android.widget.Toast.makeText(getContext(), "Could not save the setting: " + e.getMessage(),
+                        android.widget.Toast.LENGTH_LONG).show();
+                return;
+            }
+            wide.setText(wideLabel(wideConfig));
+            android.widget.Toast.makeText(getContext(), "Reopen the game to apply the change",
+                    android.widget.Toast.LENGTH_LONG).show();
+        });
+        box.addView(wide);
+
+        TextView changeData = label("Change game data…", 13);
         changeData.setOnClickListener(v -> {
             if (getContext() instanceof GameActivity) {
                 ((GameActivity) getContext()).chooseGameData();
@@ -442,6 +461,20 @@ public class TouchOverlay extends View {
         panel.setVisibility(GONE);
         syncPanel();
         return box;
+    }
+
+    /** Full 16:9 is on unless Config.toml says otherwise (the runtime's default). */
+    private static boolean isWideOn(File config) {
+        try {
+            String value = DataImporter.readSetting(config, "video", "full_widescreen");
+            return value == null || value.equals("true");
+        } catch (java.io.IOException e) {
+            return true;
+        }
+    }
+
+    private static String wideLabel(File config) {
+        return "Full 16:9 in levels: " + (isWideOn(config) ? "On" : "Off");
     }
 
     private void syncPanel() {

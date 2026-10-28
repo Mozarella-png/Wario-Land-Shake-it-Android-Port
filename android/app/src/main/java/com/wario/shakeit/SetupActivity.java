@@ -113,9 +113,9 @@ public class SetupActivity extends Activity {
         }
         buildUi();
         if (!dataReady(this)) {
-            status.setText("Aún no hay datos del juego. Elige el zip con la carpeta DATA de tu disco.");
+            status.setText("No game data yet. Choose the zip with your disc's DATA folder.");
         } else {
-            status.setText("Datos actuales: correctos. Elige otro zip para cambiarlos, o vuelve al juego.");
+            status.setText("Current data is valid. Choose another zip to replace it, or go back to the game.");
             play.setVisibility(View.VISIBLE);
         }
     }
@@ -133,7 +133,7 @@ public class SetupActivity extends Activity {
         root.setBackgroundColor(Color.BLACK);
 
         TextView title = new TextView(this);
-        title.setText("La última vez el juego se cerró con un error. Copia este texto y envíalo para poder arreglarlo.");
+        title.setText("An error occurred.");
         title.setTextColor(Color.WHITE);
         title.setTextSize(14);
         root.addView(title);
@@ -148,7 +148,7 @@ public class SetupActivity extends Activity {
         root.addView(scroll, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f));
 
         Button retry = new Button(this);
-        retry.setText("Borrar el error y reintentar");
+        retry.setText("Clear the error and retry");
         retry.setOnClickListener(v -> {
             if (crashToDelete != null) {
                 crashToDelete.delete();
@@ -164,7 +164,7 @@ public class SetupActivity extends Activity {
         try {
             return new String(java.nio.file.Files.readAllBytes(file.toPath()), java.nio.charset.StandardCharsets.UTF_8);
         } catch (IOException e) {
-            return "No se pudo leer el registro del error: " + e.getMessage();
+            return "Could not read the error log: " + e.getMessage();
         }
     }
 
@@ -228,9 +228,9 @@ public class SetupActivity extends Activity {
                 return null;
             }
             StringBuilder text = new StringBuilder();
-            text.append("El juego se cerró por un error del sistema.\n")
-                    .append("Motivo: ").append(String.valueOf(info.getDescription()))
-                    .append("\nCódigo: ").append(info.getStatus()).append("\n");
+            text.append("The game closed because of an error.\n")
+                    .append("Reason: ").append(String.valueOf(info.getDescription()))
+                    .append("\nCode: ").append(info.getStatus()).append("\n");
             try (InputStream trace = info.getTraceInputStream()) {
                 if (trace != null) {
                     ByteArrayOutputStream out = new ByteArrayOutputStream();
@@ -267,9 +267,9 @@ public class SetupActivity extends Activity {
         root.addView(title);
 
         TextView help = new TextView(this);
-        help.setText("Este port necesita tu propia copia del juego (US, RWLE01, revisión 0). Pon en un .zip "
-                + "la carpeta DATA de tu disco (con sys/ y files/) y elígelo aquí. Se descomprime una vez "
-                + "en el teléfono.");
+        help.setText("This port needs your own copy of the game (US, RWLE01, revision 0). Put your disc's DATA folder in a .zip "
+                + "(with sys/ and files/) and choose it here. It is unpacked once "
+                + "on the phone.");
         help.setTextColor(0xFFCCCCCC);
         help.setTextSize(14);
         help.setGravity(Gravity.CENTER);
@@ -291,12 +291,12 @@ public class SetupActivity extends Activity {
         root.addView(progress, barParams);
 
         pick = new Button(this);
-        pick.setText("Elegir zip de datos");
+        pick.setText("Choose data zip");
         pick.setOnClickListener(v -> openPicker());
         root.addView(pick);
 
         play = new Button(this);
-        play.setText("Volver al juego");
+        play.setText("Back to the game");
         play.setVisibility(View.GONE);
         play.setOnClickListener(v -> startGame());
         root.addView(play);
@@ -331,7 +331,7 @@ public class SetupActivity extends Activity {
         play.setVisibility(View.GONE);
         progress.setVisibility(View.VISIBLE);
         progress.setProgress(0);
-        status.setText("Leyendo el zip…");
+        status.setText("Reading the zip…");
 
         final long size = sizeOf(uri);
         final File dataDir = dataDir(this);
@@ -340,7 +340,7 @@ public class SetupActivity extends Activity {
             boolean ok = false;
             try (InputStream in = getContentResolver().openInputStream(uri)) {
                 if (in == null) {
-                    throw new IOException("No se pudo abrir el archivo elegido.");
+                    throw new IOException("Could not open the chosen file.");
                 }
                 DataImporter.importZip(in, size, dataDir, (fraction, message) -> ui.post(() -> {
                     progress.setProgress(Math.round(fraction * 100));
@@ -350,7 +350,7 @@ public class SetupActivity extends Activity {
                 result = null;
                 ok = true;
             } catch (IOException e) {
-                result = e.getMessage() != null ? e.getMessage() : "No se pudo importar el zip.";
+                result = e.getMessage() != null ? e.getMessage() : "Could not import the zip.";
             }
             final String message = result;
             final boolean success = ok;
@@ -363,10 +363,10 @@ public class SetupActivity extends Activity {
         pick.setEnabled(true);
         progress.setVisibility(View.GONE);
         if (ok) {
-            status.setText("Datos importados. Arrancando el juego…");
+            status.setText("Data imported. Starting the game…");
             startGame();
         } else {
-            status.setText(message + "\n\nElige otro zip para intentarlo de nuevo.");
+            status.setText(message + "\n\nChoose another zip to try again.");
         }
     }
 
