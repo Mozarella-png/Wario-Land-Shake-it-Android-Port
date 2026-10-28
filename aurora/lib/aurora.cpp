@@ -276,6 +276,12 @@ bool frame_worker_requested() noexcept {
       return false;
     }
 #endif
+#if defined(__ANDROID__)
+    // Test: on the phone the bounded frame worker is started and the boot then stops before the
+    // first frame (black screen, silent audio, no further runtime log). Keep frame submission
+    // synchronous on Android to check whether the worker handshake is the cause.
+    return false;
+#endif
     return true;
   }();
 #if defined(_WIN32)
