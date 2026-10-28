@@ -60,11 +60,10 @@ std::vector<AuroraEvent> g_events;
 std::atomic_bool g_backgrounded = false;
 std::atomic_bool g_nativeResizePending = false;
 std::atomic<AuroraDisplayMode> g_displayMode{AURORA_DISPLAY_MODE_WINDOWED};
-#if defined(SDL_PLATFORM_ANDROID)
-std::atomic_bool g_surfaceReady = false;
-#else
+// Android: the SDL surface callbacks never call auroraNativeSetSurfaceReady (the CI copies SDL's
+// stock SDLSurface.java), so starting "not ready" kept is_presentable() false and every frame
+// was dropped. The surface is created before SDL_main runs, so start ready here.
 std::atomic_bool g_surfaceReady = true;
-#endif
 bool g_lastPaused = false;
 bool g_gotFocus = false;
 #if defined(_WIN32)
