@@ -272,6 +272,7 @@ std::atomic_uint32_t s_pacingWindowMisses{0};
 constexpr uint32_t kPacingWindowFrames = 60; // ~1 second of guest frames
 constexpr uint32_t kPacingReducePercent = 75;
 constexpr uint32_t kPacingRestorePercent = 25;
+constexpr uint32_t kPacingMinimumSamples = 1;
 
 uint32_t maximum_interpolation_samples() noexcept {
   const uint32_t targetFps = frame_interpolation_fps();
@@ -771,7 +772,9 @@ void report_producer_paced(bool paced) noexcept {
   uint32_t target =
       std::min(s_interpolationSampleTarget.load(std::memory_order_acquire), maximumSamples);
   if (misses * 100u >= frames * kPacingReducePercent) {
-    if (target > 0) {
+    // Keep at least one inserted frame while interpolation is on. Falling to zero drops the
+    // picture straight back to 60 Hz, which reads as the game running slowly with visible judder.
+    if (target > kPacingMinimumSamples) {
       --target;
       s_diagSlotReductions.fetch_add(1, std::memory_order_relaxed);
       Log.info("interpolation slots reduced to {}: {}/{} frames overran their retrace budget",
