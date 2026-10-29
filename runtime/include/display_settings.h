@@ -44,6 +44,12 @@ Settings Latest();
 bool GameWidescreen();
 // The window (or screen) is wider than 16:9, so Fill shows more of the game than 16:9 does.
 bool SurfaceWide();
+
+// Horizontal scale of the game's 16:9 view, relative to its 4-unit half-width (the 4:3 base).
+// The game's stage culling and room-edge queries use it. 4/3 is the 16:9 picture. In Fill on a
+// surface wider than 16:9 the projection shows 3 * aspect units of half-width, so the factor
+// follows the surface: 3 * aspect / 4, never less than 4/3, so nothing at the sides is culled.
+float WideHalfWidthScale();
 // Render height for a scale (480 lines per 1x).
 float LinesForScale(float renderScale);
 

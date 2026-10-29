@@ -168,4 +168,16 @@ bool SurfaceWide() {
     return SurfaceWiderThan169();
 }
 
+float WideHalfWidthScale() {
+    std::lock_guard<std::mutex> lock(g_mutex);
+    constexpr float kWide169 = 4.0f / 3.0f;
+    if (EffectiveAspect(g_current.aspect) != kAspectFill || !SurfaceWiderThan169()) {
+        return kWide169;
+    }
+    // Half-width in units = 3 * surfaceAspect (the 4:3 base is +-3 units tall), so the factor on the
+    // 4-unit base is 3 * surfaceAspect / 4.
+    const float surfaceAspect = static_cast<float>(g_surfaceWidth) / static_cast<float>(g_surfaceHeight);
+    return std::max(kWide169, 0.75f * surfaceAspect);
+}
+
 } // namespace DisplaySettings

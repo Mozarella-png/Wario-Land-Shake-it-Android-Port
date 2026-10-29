@@ -40,18 +40,26 @@ void WarioWideApplyGlobals() {
     if (!WarioFullWide()) return;
     // fn_80051E28 culls the stage's objects against +-4 x +-3 units times this factor (1.0, read
     // only there).
+    // The factor follows the screen: 4/3 on 16:9 and narrower, 3 * aspect / 4 on wider Fill screens
+    // (ultrawide), so the culling and the room edges reach the sides of the picture that is shown.
+    const float factor = DisplaySettings::WideHalfWidthScale();
     constexpr uint32_t kStageCullScale = 0x8061AA90u;
-    if (Memory::ReadFloat32(kStageCullScale) != 4.0f / 3.0f) Memory::WriteFloat32(kStageCullScale, 4.0f / 3.0f);
+    if (Memory::ReadFloat32(kStageCullScale) != factor) Memory::WriteFloat32(kStageCullScale, factor);
     // "Screen width" globals (k x 4.0, set by static constructors) that the camera code passes to
     // fn_8004C654 to find where it must stop at a room's edges: fn_802864F8 & co. (0x80628BAC),
     // fn_8011D8C8 (0x806282DC), fn_8004E7E4 (0x80627D2C), fn_80215E68 (0x8062890C). The 4:3 value
-    // is remembered on first sight so the write never compounds.
+    // is remembered on first sight; each write is base * factor, applied only to the value the
+    // previous write left, so it never compounds when the factor changes.
     static const uint32_t kViewWidths[] = {0x80628BACu, 0x806282DCu, 0x80627D2Cu, 0x8062890Cu};
     static float baseWidth[4] = {0.f, 0.f, 0.f, 0.f};
+    static float appliedFactor[4] = {1.f, 1.f, 1.f, 1.f};
     for (int i = 0; i < 4; ++i) {
         const float cur = Memory::ReadFloat32(kViewWidths[i]);
         if (baseWidth[i] == 0.f && cur > 0.f) baseWidth[i] = cur;
-        if (baseWidth[i] > 0.f && cur == baseWidth[i]) Memory::WriteFloat32(kViewWidths[i], baseWidth[i] * 4.0f / 3.0f);
+        if (baseWidth[i] > 0.f && cur == baseWidth[i] * appliedFactor[i] && appliedFactor[i] != factor) {
+            Memory::WriteFloat32(kViewWidths[i], baseWidth[i] * factor);
+            appliedFactor[i] = factor;
+        }
     }
 }
 
@@ -66,7 +74,7 @@ float ScreenEdgeX(uint32_t obj, uint32_t halfConstAddr) {
     const float zoom = (camera != 0 && Memory::Contains(camera + 0x54u, 4)) ? Memory::ReadFloat32(camera + 0x54u) : 1.0f;
     const float x = camera != 0 ? Memory::ReadFloat32(camera + 0x38u) : Memory::ReadFloat32(obj + 0x54u);
     float half = Memory::ReadFloat32(halfConstAddr);
-    if (WarioFullWide()) half *= 4.0f / 3.0f;
+    if (WarioFullWide()) half *= DisplaySettings::WideHalfWidthScale();
     return half * zoom + x;
 }
 
