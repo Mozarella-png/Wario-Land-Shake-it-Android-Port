@@ -36,6 +36,7 @@ public class GameActivity extends SDLActivity {
         return new String[] {"main"};
     }
 
+    private static final int ASPECT_16X9 = 1;
     private static final int ASPECT_FILL = 2;
 
     // Implemented in runtime/src/android/android_bridge.cpp.
@@ -92,9 +93,9 @@ public class GameActivity extends SDLActivity {
     private int configAspect() {
         try {
             String v = DataImporter.readSetting(SetupActivity.configFile(this), "video", "aspect_mode");
-            return v == null ? ASPECT_FILL : Integer.parseInt(v.trim());
+            return v == null ? ASPECT_16X9 : Integer.parseInt(v.trim());
         } catch (IOException | RuntimeException e) {
-            return ASPECT_FILL;
+            return ASPECT_16X9;
         }
     }
 

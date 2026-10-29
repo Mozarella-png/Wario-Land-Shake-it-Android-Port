@@ -251,7 +251,7 @@ public class LauncherActivity extends Activity {
     }
 
     private void updateStatus() {
-        int aspect = getInt("video", "aspect_mode", 2);
+        int aspect = getInt("video", "aspect_mode", 1);
         String aspectText = aspect == 0 ? "4:3" : aspect == 1 ? "16:9" : aspect == 3 ? "2.39:1" : t("llenar", "fill");
         double scale = getDouble("video", "resolution_multiplier", 0.0);
         String res = scale <= 0 ? t("resolución automática", "auto resolution")
@@ -308,8 +308,8 @@ public class LauncherActivity extends Activity {
         check(t("Mostrar FPS", "Show FPS"), "video", "show_fps", false, null);
         check(t("Gráfica de tiempo por cuadro", "Frame time graph"), "video", "frame_graph", false,
                 t("Útil para ver tirones.", "Useful to spot stutter."));
-        info(t("En Android el juego siempre llena la pantalla del teléfono.",
-               "On Android the game always fills the phone's screen."), MUTED);
+        info(t("En Android el juego se centra en 16:9 por defecto, con bandas negras si la pantalla es más ancha.",
+               "On Android the game is centered at 16:9 by default, with black bars on wider screens."), MUTED);
     }
 
     private void buildGraphics() {
@@ -323,6 +323,17 @@ public class LauncherActivity extends Activity {
                 t("Imagen más suave, como en la Wii.", "Softer picture, like on the Wii."));
         section(t("Texturas", "Textures"));
         check(t("Usar texturas de reemplazo", "Use replacement textures"), "video", "texture_replacements", true, null);
+        section(t("Pack de texturas", "Texture pack"));
+        texturePackLabel = text(texturePackSummary(), 13, MUTED);
+        page.addView(texturePackLabel, wrap(0, dp(6), 0, dp(4)));
+        flatButton(t("Importar pack (.zip)", "Import pack (.zip)"),
+                () -> startActivity(new Intent(this, TexturePackActivity.class)));
+        flatButton(t("Quitar pack", "Remove pack"), () -> {
+            TexturePackActivity.remove(this);
+            refreshTexturePackLabel();
+        });
+        info(t("Las texturas se cargan al iniciar el juego: reinícialo para ver el cambio.",
+               "Textures load when the game starts: restart it to see changes."), MUTED);
     }
 
     private void buildAudio() {
@@ -515,20 +526,19 @@ public class LauncherActivity extends Activity {
     }
 
     private void widescreenCheck() {
-        check(t("★ 16:9 real en los niveles (experimental)", "★ True 16:9 in levels (experimental)"),
-                // Same default as the runtime on Android (WarioFullWide): on unless Config.toml says false.
-                "video", "full_widescreen", true,
-                t("Quita los paneles laterales y el nivel llena toda la pantalla, algo que el juego original nunca permitió. Se aplica al iniciar el juego.",
-                  "Removes the side panels so the level fills the whole screen, something the original game never allowed. Applies when the game starts."));
+        check("True 16:9 in levels (experimental)",
+                // Same default as the runtime on Android (WarioFullWide): off unless the player turns it on.
+                "video", "full_widescreen", false,
+                "Removes the side panels so the level fills the whole screen. Experimental: parts of the sides may be empty. Applies when the game starts.");
     }
 
     private View aspectPicker() {
-        // 0 = 4:3, 1 = 16:9, 2 = Fill (Android default), 3 = Cinematic. Same as PC aspect_mode.
+        // 0 = 4:3, 1 = 16:9 (Android default, centered with black bars), 2 = Fill, 3 = Cinematic. Same as PC aspect_mode.
         String[] labels = {
             t("4:3 (original)", "4:3 (original)"), "16:9",
             t("Llenar la ventana", "Fill the window"), t("Cinemático 2.39:1", "Cinematic 2.39:1"),
         };
-        return picker(labels, clampIndex(getInt("video", "aspect_mode", 2), labels.length), i -> {
+        return picker(labels, clampIndex(getInt("video", "aspect_mode", 1), labels.length), i -> {
             put("video", "aspect_mode", String.valueOf(i));
             put("video", "widescreen", String.valueOf(i != 0));
             updateStatus();
@@ -593,6 +603,20 @@ public class LauncherActivity extends Activity {
     }
 
     // ---- Config.toml (same file and keys as the PC launcher, edited through DataImporter) --
+
+    private TextView texturePackLabel;
+
+    private void refreshTexturePackLabel() {
+        if (texturePackLabel != null) {
+            texturePackLabel.setText(texturePackSummary());
+        }
+    }
+
+    private String texturePackSummary() {
+        int count = TexturePackActivity.installedCount(this);
+        return count == 0 ? t("Ningún pack instalado.", "No pack installed.")
+                : count + " " + t("texturas de reemplazo instaladas.", "replacement textures installed.");
+    }
 
     private File config() {
         return SetupActivity.configFile(this);
