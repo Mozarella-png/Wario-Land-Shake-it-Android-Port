@@ -82,19 +82,35 @@ void drain() {
   if (detail::sBufferSize == 0) {
     return;
   }
+
+  // Take the pending commands out of the shared buffer before decoding them. Decoding can
+  // re-enter GX: the frame-wait hook runs guest alarm and retrace handlers, and those may write
+  // commands. Such writes must land in a fresh buffer. Growing the buffer that process() is
+  // reading would leave it pointing at freed memory, and clearing the size at the end would
+  // silently drop the commands written during the re-entry.
+  uint8_t* pending = detail::sBufferData;
+  const uint32_t pendingSize = detail::sBufferSize;
+  detail::sBufferData = static_cast<uint8_t*>(malloc(detail::sBufferCapacity));
+  detail::sBufferSize = 0;
+
   uint32_t consumed = 0;
   bool retried = false;
-  while (consumed < detail::sBufferSize) {
-    const auto count = process(detail::sBufferData + consumed, detail::sBufferSize - consumed, true);
-    if (count == 0 && retried)
-      throw gfx::StagingCapacityError("FIFO draw does not fit after capacity submission");
-    consumed += count;
-    if (consumed == detail::sBufferSize) break;
-    // process returned with its renderer lock released. No recursive drain.
-    gfx::split_staging_batch();
-    retried = true;
+  try {
+    while (consumed < pendingSize) {
+      const auto count = process(pending + consumed, pendingSize - consumed, true);
+      if (count == 0 && retried)
+        throw gfx::StagingCapacityError("FIFO draw does not fit after capacity submission");
+      consumed += count;
+      if (consumed == pendingSize) break;
+      // process returned with its renderer lock released. No recursive drain.
+      gfx::split_staging_batch();
+      retried = true;
+    }
+  } catch (...) {
+    free(pending);
+    throw;
   }
-  detail::sBufferSize = 0;
+  free(pending);
 }
 
 const uint8_t* get_buffer_data() { return detail::sBufferData; }
