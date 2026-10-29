@@ -4,6 +4,8 @@ import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Process;
+
+import java.io.IOException;
 import android.view.Gravity;
 import android.view.WindowInsets;
 import android.view.WindowInsetsController;
@@ -76,8 +78,8 @@ public class GameActivity extends SDLActivity {
         // WindowInsetsController) once SDLActivity has set up the content view.
         hideSystemBars();
 
-        // Applies at the next frame; the game reads the aspect again only at boot.
-        nativeApplyDisplaySettings(ASPECT_FILL, 0f, false);
+        // The launcher's choices (Config.toml), so the in-game picture matches the start menu.
+        nativeApplyDisplaySettings(configAspect(), configRenderScale(), configBool("video", "show_fps", false));
 
         overlay = new TouchOverlay(this);
         addContentView(overlay, new FrameLayout.LayoutParams(
@@ -85,6 +87,33 @@ public class GameActivity extends SDLActivity {
         addContentView(overlay.createPanel(), new FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.WRAP_CONTENT, FrameLayout.LayoutParams.WRAP_CONTENT,
                 Gravity.TOP | Gravity.CENTER_HORIZONTAL));
+    }
+
+    private int configAspect() {
+        try {
+            String v = DataImporter.readSetting(SetupActivity.configFile(this), "video", "aspect_mode");
+            return v == null ? ASPECT_FILL : Integer.parseInt(v.trim());
+        } catch (IOException | RuntimeException e) {
+            return ASPECT_FILL;
+        }
+    }
+
+    private float configRenderScale() {
+        try {
+            String v = DataImporter.readSetting(SetupActivity.configFile(this), "video", "resolution_multiplier");
+            return v == null ? 0f : Float.parseFloat(v.trim());
+        } catch (IOException | RuntimeException e) {
+            return 0f;
+        }
+    }
+
+    private boolean configBool(String section, String key, boolean def) {
+        try {
+            String v = DataImporter.readSetting(SetupActivity.configFile(this), section, key);
+            return v == null ? def : v.trim().equals("true");
+        } catch (IOException e) {
+            return def;
+        }
     }
 
     @Override

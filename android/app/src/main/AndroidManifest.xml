@@ -13,9 +13,9 @@
         android:supportsRtl="false"
         android:theme="@style/Theme.WarioShakeIt">
 
-        <!-- The launcher: asks for the game's data zip the first time (or when asked to change it). -->
+        <!-- Start menu (same pages as the PC launcher). -->
         <activity
-            android:name=".SetupActivity"
+            android:name=".LauncherActivity"
             android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|uiMode|density|keyboard|navigation"
             android:exported="true"
             android:screenOrientation="sensorLandscape">
@@ -24,6 +24,13 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- Asks for the game's data zip the first time (or when asked to change it). -->
+        <activity
+            android:name=".SetupActivity"
+            android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|uiMode|density|keyboard|navigation"
+            android:exported="false"
+            android:screenOrientation="sensorLandscape" />
 
         <!-- The game runs in its own process, so it can be restarted with another game folder. -->
         <activity
