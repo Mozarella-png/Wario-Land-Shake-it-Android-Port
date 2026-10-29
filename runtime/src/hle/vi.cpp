@@ -1320,7 +1320,8 @@ extern "C" void VIGetNextFrameBuffer_HLE_801bab24(CpuContext* ctx)
         fb = g_vi.pendingNextFrameBuffer;
     }
     ViSetR3(ctx, fb);
-    VI_HLE_PollRetrace(ctx);
+    GuestInterruptCallbackContext interrupt;
+    VI_HLE_PollRetrace(interrupt.get());
 }
 #if 0  // NSMBW: VIGetNextFrameBuffer is not linked into NSMBW (was MKW-only)
 #if 0
@@ -1352,7 +1353,10 @@ extern "C" void VIGetRetraceCount_HLE_801baba4(CpuContext* ctx)
         count = g_vi.retraceCount;
     }
     ViSetR3(ctx, count);
-    VI_HLE_PollRetrace(ctx);
+    // The guest's retrace callbacks are an interrupt from the caller's point of view. Run them on a
+    // private register file: running them on the live context clobbers the caller's PC/LR/GPRs.
+    GuestInterruptCallbackContext interrupt;
+    VI_HLE_PollRetrace(interrupt.get());
 }
 PPC_NATIVE_OVERRIDE_VOID(803AB60C, VIGetRetraceCount_HLE_801baba4, (CpuContext* ctx), (ctx));
 
@@ -1365,7 +1369,8 @@ extern "C" void VIGetNextField_HLE_801babac(CpuContext* ctx)
         fieldOdd = g_vi.fieldOdd;
     }
     ViSetR3(ctx, fieldOdd ? 1 : 0);
-    VI_HLE_PollRetrace(ctx);
+    GuestInterruptCallbackContext interrupt;
+    VI_HLE_PollRetrace(interrupt.get());
 }
 PPC_NATIVE_OVERRIDE_VOID(803AB614, VIGetNextField_HLE_801babac, (CpuContext* ctx), (ctx));
 
@@ -1443,7 +1448,8 @@ extern "C" void VIWaitForRetrace_HLE_801b99ec(CpuContext* ctx)
         if (now < target) {
             SleepPreciselyUntil(target, true);
         }
-        AdvanceRetrace(cpu, target, true);
+        GuestInterruptCallbackContext interrupt;
+        AdvanceRetrace(interrupt.get(), target, true);
     }
     ViSetR3(cpu, 0);
 }
