@@ -4,6 +4,9 @@ import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Process;
+import android.view.Choreographer;
+import android.view.Display;
+import android.view.WindowManager;
 
 import java.io.IOException;
 import android.view.Gravity;
@@ -42,8 +45,11 @@ public class GameActivity extends SDLActivity {
     // Implemented in runtime/src/android/android_bridge.cpp.
     public static native void nativeSetTouchState(int buttons, boolean shake, float tilt);
     public static native void nativeApplyDisplaySettings(int aspect, float renderScale, boolean showFps);
+    public static native void nativeSetDisplayClock(long vblankNanos, double hz);
 
     private TouchOverlay overlay;
+    private Choreographer.FrameCallback displayClock;
+    private boolean displayClockOn;
 
     /**
      * Opens the picker for the game data (SetupActivity). The runtime reads the game folder once per
@@ -82,6 +88,9 @@ public class GameActivity extends SDLActivity {
         // The launcher's choices (Config.toml), so the in-game picture matches the start menu.
         nativeApplyDisplaySettings(configAspect(), configRenderScale(), configBool("video", "show_fps", false));
 
+        // 120 or 180 FPS frame interpolation needs a display that runs that fast: ask for its mode.
+        requestDisplayRate(configInt("video", "frame_interpolation_fps", 0));
+
         overlay = new TouchOverlay(this);
         addContentView(overlay, new FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT));
@@ -108,6 +117,89 @@ public class GameActivity extends SDLActivity {
         }
     }
 
+    private int configInt(String section, String key, int def) {
+        try {
+            String v = DataImporter.readSetting(SetupActivity.configFile(this), section, key);
+            return v == null ? def : Integer.parseInt(v.trim());
+        } catch (IOException | NumberFormatException e) {
+            return def;
+        }
+    }
+
+    /**
+     * Switches to the screen mode closest to the target refresh rate (same resolution as now). A
+     * 60 FPS target keeps the system's choice. Falls back to the fastest mode the screen has.
+     */
+    private void requestDisplayRate(int targetFps) {
+        if (targetFps <= 60 || Build.VERSION.SDK_INT < 23) {
+            return;
+        }
+        try {
+            Display display = getWindowManager().getDefaultDisplay();
+            Display.Mode current = display.getMode();
+            Display.Mode best = null;
+            for (Display.Mode mode : display.getSupportedModes()) {
+                if (mode.getPhysicalWidth() != current.getPhysicalWidth()
+                        || mode.getPhysicalHeight() != current.getPhysicalHeight()) {
+                    continue;
+                }
+                if (best == null) {
+                    best = mode;
+                    continue;
+                }
+                boolean modeFast = mode.getRefreshRate() >= targetFps - 2f;
+                boolean bestFast = best.getRefreshRate() >= targetFps - 2f;
+                if (modeFast && !bestFast) {
+                    best = mode;
+                } else if (modeFast == bestFast && (modeFast
+                        ? Math.abs(mode.getRefreshRate() - targetFps) < Math.abs(best.getRefreshRate() - targetFps)
+                        : mode.getRefreshRate() > best.getRefreshRate())) {
+                    best = mode;
+                }
+            }
+            if (best == null || best.getModeId() == current.getModeId()) {
+                return;
+            }
+            WindowManager.LayoutParams params = getWindow().getAttributes();
+            params.preferredDisplayModeId = best.getModeId();
+            params.preferredRefreshRate = best.getRefreshRate();
+            getWindow().setAttributes(params);
+        } catch (RuntimeException e) {
+            // Keep the system's mode if the screen refuses the request.
+        }
+    }
+
+    /**
+     * Sends every display frame's vblank time to the runtime (Choreographer), so the game clock can
+     * follow the screen instead of running on its own 60 Hz timer.
+     */
+    private void startDisplayClock() {
+        if (displayClockOn) {
+            return;
+        }
+        if (displayClock == null) {
+            displayClock = new Choreographer.FrameCallback() {
+                @Override
+                public void doFrame(long frameTimeNanos) {
+                    if (!displayClockOn) {
+                        return;
+                    }
+                    double hz = getWindowManager().getDefaultDisplay().getRefreshRate();
+                    nativeSetDisplayClock(frameTimeNanos, hz);
+                    Choreographer.getInstance().postFrameCallback(this);
+                }
+            };
+        }
+        displayClockOn = true;
+        Choreographer.getInstance().postFrameCallback(displayClock);
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        startDisplayClock();
+    }
+
     private boolean configBool(String section, String key, boolean def) {
         try {
             String v = DataImporter.readSetting(SetupActivity.configFile(this), section, key);
@@ -123,6 +215,7 @@ public class GameActivity extends SDLActivity {
         if (overlay != null) {
             overlay.releaseAll();
         }
+        displayClockOn = false;
         super.onPause();
     }
 
