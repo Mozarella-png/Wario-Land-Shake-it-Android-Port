@@ -1,5 +1,7 @@
 package com.wario.shakeit;
 
+import android.hardware.display.DisplayManager;
+import android.content.Context;
 import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
@@ -77,6 +79,11 @@ public class GameActivity extends SDLActivity {
         // Lets the launcher tell failures of this run from older ones.
         SetupActivity.touchStartMarker(this);
 
+        // Before the runtime starts (it reads Config.toml once): ask for no more frame interpolation
+        // than this screen can show. 180 FPS on a 120 Hz panel leaves the interpolated frames
+        // unpresentable, which the runtime reads as overrun and drops to 60 Hz judder.
+        matchInterpolationToDisplay();
+
         // The runtime environment (WIICOMPILED_*) is set in WarioApplication, before libmain.so loads.
 
         super.onCreate(savedInstanceState);
@@ -114,6 +121,44 @@ public class GameActivity extends SDLActivity {
             return v == null ? 0f : Float.parseFloat(v.trim());
         } catch (IOException | RuntimeException e) {
             return 0f;
+        }
+    }
+
+    /**
+     * Lowers [video] frame_interpolation_fps to the largest multiple of 60 the screen can run
+     * (same resolution as now). Leaves the setting alone when the screen can already do it.
+     */
+    private void matchInterpolationToDisplay() {
+        if (Build.VERSION.SDK_INT < 23) {
+            return;
+        }
+        try {
+            int target = configInt("video", "frame_interpolation_fps", 0);
+            if (target <= 60) {
+                return;
+            }
+            DisplayManager dm = (DisplayManager) getSystemService(Context.DISPLAY_SERVICE);
+            Display display = dm.getDisplay(Display.DEFAULT_DISPLAY);
+            if (display == null) {
+                return;
+            }
+            Display.Mode current = display.getMode();
+            float top = 0f;
+            for (Display.Mode mode : display.getSupportedModes()) {
+                if (mode.getPhysicalWidth() == current.getPhysicalWidth()
+                        && mode.getPhysicalHeight() == current.getPhysicalHeight()) {
+                    top = Math.max(top, mode.getRefreshRate());
+                }
+            }
+            // +2 Hz tolerance: panels report 119.9 Hz for a 120 Hz mode.
+            int achievable = ((int) (top + 2f) / 60) * 60;
+            int effective = Math.min(target, achievable);
+            if (effective != target) {
+                DataImporter.writeSetting(SetupActivity.configFile(this), "video",
+                        "frame_interpolation_fps", String.valueOf(effective));
+            }
+        } catch (IOException | RuntimeException e) {
+            // Keep the configured value if the screen or the file cannot be read.
         }
     }
 
