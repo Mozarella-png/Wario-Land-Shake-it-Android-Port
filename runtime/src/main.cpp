@@ -1520,10 +1520,17 @@ int RuntimeMain(int argc, char** argv) {
         auroraConfig.logLevel = LOG_DEBUG;
         // NSMBW display settings: aspect_mode, else the older widescreen/force_16_9 keys.
         DisplaySettings::Settings displaySettings;
+        // Android defaults to a centered 16:9 picture (black bars on wide screens, nothing cut off).
+        // Fill still works from the launcher's Aspect ratio menu.
+#if defined(__ANDROID__)
+        constexpr DisplaySettings::Aspect kDefaultAspect = DisplaySettings::kAspect16x9;
+#else
+        constexpr DisplaySettings::Aspect kDefaultAspect = DisplaySettings::kAspectFill;
+#endif
         displaySettings.aspect = RuntimeConfigFile::AspectMode(
             RuntimeConfigFile::ForceAspect169Enabled()      ? DisplaySettings::kAspect16x9
             : !RuntimeConfigFile::WidescreenEnabled(true) ? DisplaySettings::kAspect4x3
-                                                          : DisplaySettings::kAspectFill);
+                                                          : kDefaultAspect);
         displaySettings.renderScale = RuntimeConfigFile::ResolutionMultiplier(2.25f);  // 1080p
         DisplaySettings::Initialize(displaySettings);
         const bool configWidescreen = DisplaySettings::GameWidescreen();
