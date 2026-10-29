@@ -7,6 +7,7 @@
 #include "settings_overlay.h"
 extern "C" uint32_t WarioHostSkipButtons();
 extern "C" void WarioIntroButtons(uint32_t hold);
+extern "C" void WarioSetAndroidDisplayClock(int64_t vblankNanos, double hz);  // hle/vi.cpp
 #include "virtual_remote.h"
 
 #include "netplay/net_socket.h"
@@ -68,6 +69,14 @@ JNIEXPORT void JNICALL Java_com_wario_shakeit_GameActivity_nativeApplyDisplaySet
     settings_overlay::SetAspect(aspect < 0 || aspect > 3 ? DisplaySettings::kAspectFill : static_cast<int32_t>(aspect));
     settings_overlay::SetRenderScale(renderScale >= 0.0f ? renderScale : 1.0f);
     settings_overlay::SetShowFps(showFps == JNI_TRUE);
+}
+
+// GameActivity.nativeSetDisplayClock: called on every display frame by the activity (Choreographer).
+// Gives the game clock the real vblank time and refresh rate, so it can lock to the screen.
+JNIEXPORT void JNICALL Java_com_wario_shakeit_GameActivity_nativeSetDisplayClock(
+    JNIEnv*, jclass, jlong vblankNanos, jdouble hz)
+{
+    WarioSetAndroidDisplayClock(static_cast<int64_t>(vblankNanos), static_cast<double>(hz));
 }
 
 // GameActivity.nativeGraphicsInfo: the GPU the game is drawing with and whether the GPU
