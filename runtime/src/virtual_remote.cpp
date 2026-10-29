@@ -18,7 +18,12 @@
 #include <SDL3/SDL_keyboard.h>
 #include <SDL3/SDL_timer.h>
 
-// WARIO: botones para saltar la intro (Intro, Espacio, X, Escape; mando: abajo/derecha/Start). 0x0800 si hay alguno.
+namespace VirtualRemote {
+bool TouchButtonHeld(uint32_t touchButton);
+}
+
+// WARIO: botones para saltar la intro (Intro, Espacio, X, Escape; mando: abajo/derecha/Start; touch A en
+// Android). 0x0800 si hay alguno.
 extern "C" uint32_t WarioHostSkipButtons() {
     uint32_t mask = 0;
     int numKeys = 0;
@@ -36,6 +41,7 @@ extern "C" uint32_t WarioHostSkipButtons() {
             SDL_GetGamepadButton(pad, SDL_GAMEPAD_BUTTON_START)) mask |= 0x0800u;
     }
     SDL_free(ids);
+    if (VirtualRemote::TouchButtonHeld(0x040u /* kTouchA */)) mask |= 0x0800u;
     return mask;
 }
 
@@ -581,6 +587,10 @@ void AnnounceLocked(uint32_t chan, bool pad) {
 }
 
 } // namespace
+
+bool TouchButtonHeld(uint32_t touchButton) {
+    return (g_touchButtons.load(std::memory_order_relaxed) & touchButton) != 0;
+}
 
 void SetTouchState(uint32_t touchButtons, bool shake, float tilt) {
     g_touchButtons.store(touchButtons, std::memory_order_relaxed);

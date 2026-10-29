@@ -35,5 +35,7 @@ enum TouchButton : uint32_t {
     kTouchOne = 0x010, kTouchTwo = 0x020, kTouchA = 0x040, kTouchPlus = 0x080, kTouchMinus = 0x100,
 };
 void SetTouchState(uint32_t touchButtons, bool shake, float tilt);
+// True while a touch button (TouchButton bits) is held. The intro skip reads the touch A button.
+bool TouchButtonHeld(uint32_t touchButton);
 
 } // namespace VirtualRemote

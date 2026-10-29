@@ -34,6 +34,8 @@ public class TouchOverlay extends View {
 
     private static final int JOY = 0, ONE_C = 1, TWO_C = 2, A_C = 3, PLUS_C = 4, MINUS_C = 5, SHAKE_C = 6;
     private static final int COUNT = 7;
+    // Pointer target of the fixed Skip button under the gear (not a draggable control).
+    private static final int SKIP_HIT = 100;
     private static final String[] IDS = {"joy", "one", "two", "a", "plus", "minus", "shake"};
     private static final String[] LABELS = {"Stick", "1", "2", "A", "+", "-", "Shake"};
     // Defaults as fractions of the screen (center x, center y), for a landscape phone.
@@ -158,6 +160,12 @@ public class TouchOverlay extends View {
         return new RectF(m, m, m + dp(44), m + dp(44));
     }
 
+    // "Skip": a pill right under the gear, same width.
+    private RectF skipRect() {
+        RectF g = gearRect();
+        return new RectF(g.left, g.bottom + dp(6), g.right + dp(26), g.bottom + dp(6) + dp(30));
+    }
+
     private int hit(float x, float y) {
         for (int c = COUNT - 1; c >= 0; c--) {
             RectF r = rectOf(c);
@@ -184,6 +192,10 @@ public class TouchOverlay extends View {
     // ---- Input -------------------------------------------------------------------------
 
     private int contribution(int c, float x, float y) {
+        if (c == SKIP_HIT) {
+            // A: the intro skips on A (runtime WarioIntroButtons) and A advances the cutscene text.
+            return A;
+        }
         if (c == SHAKE_C) {
             return SHAKE_FLAG;
         }
@@ -260,6 +272,13 @@ public class TouchOverlay extends View {
         }
         if (gearRect().contains(x, y)) {
             setEditing(true);
+            return true;
+        }
+        if (skipRect().contains(x, y)) {
+            pointerControl.put(id, SKIP_HIT);
+            pointerInput.put(id, A);
+            sendInput();
+            invalidate();
             return true;
         }
         int c = hit(x, y);
@@ -519,6 +538,7 @@ public class TouchOverlay extends View {
         }
         if (!editing) {
             drawGear(canvas);
+            drawSkip(canvas);
         }
     }
 
@@ -550,6 +570,18 @@ public class TouchOverlay extends View {
             canvas.drawRoundRect(r.left - dp(6), r.top - dp(6), r.right + dp(6), r.bottom + dp(6),
                     dp(8), dp(8), selectPaint);
         }
+    }
+
+    private void drawSkip(Canvas canvas) {
+        RectF r = skipRect();
+        boolean pressed = pointerControl.indexOfValue(SKIP_HIT) >= 0;
+        fillPaint.setColor(Color.BLACK);
+        fillPaint.setAlpha(pressed ? 170 : 90);
+        canvas.drawRoundRect(r, dp(15), dp(15), fillPaint);
+        textPaint.setAlpha(pressed ? 255 : 220);
+        textPaint.setTextSize(dp(15));
+        float baseline = r.centerY() - (textPaint.descent() + textPaint.ascent()) / 2f;
+        canvas.drawText("Skip", r.centerX(), baseline, textPaint);
     }
 
     private void drawGear(Canvas canvas) {
