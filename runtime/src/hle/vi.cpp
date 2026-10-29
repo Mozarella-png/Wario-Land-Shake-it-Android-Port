@@ -193,6 +193,14 @@ struct DisplayLock {
 };
 DisplayLock g_displayLock;  // under g_viMutex
 
+// Android: the activity passes the vblank time of each frame (Choreographer's frameTimeNanos, which is
+// CLOCK_MONOTONIC, the same clock as steady_clock on Android) and the display's refresh rate.
+struct AndroidDisplayClock {
+    std::atomic<int64_t> vblankNanos{0};
+    std::atomic<double> hz{0.0};
+};
+AndroidDisplayClock g_androidDisplayClock;
+
 void RefreshDisplayLockLocked(Clock::time_point now) {
     DisplayLock& d = g_displayLock;
     if (!settings_overlay::VSync()) {
@@ -242,9 +250,34 @@ void RefreshDisplayLockLocked(Clock::time_point now) {
                 d.valid ? (std::string("game clock locked at ") + std::to_string(k) + " refresh(es) per frame").c_str()
                         : "no whole fraction near 60 Hz; the game keeps its own clock");
     }
+#elif defined(__ANDROID__)
+    const int64_t vblank = g_androidDisplayClock.vblankNanos.load(std::memory_order_acquire);
+    const double hz = g_androidDisplayClock.hz.load(std::memory_order_acquire);
+    if (vblank == 0 || hz <= 0.0) {
+        // The activity has not reported a frame yet; keep the game's own clock until it does.
+        d.valid = false;
+        return;
+    }
+    const int k = static_cast<int>(std::lround(hz / 60.0));
+    d.valid = k >= 1 && k <= 8 && std::fabs(hz / k - 60.0) < 60.0 * 0.02;
+    d.k = k;
+    d.period = std::chrono::nanoseconds(static_cast<int64_t>(std::llround(1e9 / hz)));
+    // The most recent vblank is a valid phase reference: only the phase modulo the period matters.
+    d.vblank = Clock::time_point(std::chrono::nanoseconds(vblank));
+    if (!d.logged) {
+        d.logged = true;
+        RT_LOGF(RT_TAG_VI, "V-Sync: display %.3f Hz, %s\n", hz,
+                d.valid ? (std::string("game clock locked at ") + std::to_string(k) + " refresh(es) per frame").c_str()
+                        : "no whole fraction near 60 Hz; the game keeps its own clock");
+    }
 #else
     d.valid = false;
 #endif
+}
+
+extern "C" void WarioSetAndroidDisplayClock(int64_t vblankNanos, double hz) {
+    g_androidDisplayClock.hz.store(hz, std::memory_order_release);
+    g_androidDisplayClock.vblankNanos.store(vblankNanos, std::memory_order_release);
 }
 
 // The interval to the retrace after `retrace`: k display periods, nudged toward the target phase.
