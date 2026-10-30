@@ -103,7 +103,22 @@ extern "C" [[noreturn]] void OS__LoadContext_801a1f58(CpuContext* ctx)
         
         // Validate the jump target exists in our translated function registry
         if (srr0 == 0) {
-            RT_LOG(RT_TAG_OS) << "OS__LoadContext: FATAL - SRR0 (jump target) is NULL!" << std::endl;
+            // Diagnostic dump: this abort is the observed SIGABRT on Android. Record enough state to
+            // tell which thread/context was loaded and what the scheduler looked like at that moment.
+            const uint32_t runningThread = ::Memory::Read32(kOSRunningContextAddr);
+            const uint32_t currentContext = ::Memory::Read32(kOSCurrentContextAddr);
+            const uint32_t disableCount = ::Memory::Read32(kSchedulerIdleFlagAddr);
+            const uint32_t ctxLr = ::Memory::Read32(guestContextAddr + 0x84u);
+            const uint32_t ctxCtr = ::Memory::Read32(guestContextAddr + 0x88u);
+            const uint32_t ctxSp = ::Memory::Read32(guestContextAddr + 4u);
+            const uint16_t ctxState = ::Memory::Read16(guestContextAddr + 0x2C8u);
+            RT_LOG(RT_TAG_OS) << "OS__LoadContext: FATAL - SRR0 (jump target) is NULL! ctx=0x"
+                      << std::hex << guestContextAddr
+                      << " ctxLR=0x" << ctxLr << " ctxCTR=0x" << ctxCtr << " ctxSP=0x" << ctxSp
+                      << " ctxState=0x" << ctxState
+                      << " runningThread=0x" << runningThread
+                      << " currentContext=0x" << currentContext
+                      << " schedulerDisableCount=" << std::dec << disableCount << std::endl;
             std::fflush(stderr);
             std::abort();
         }
