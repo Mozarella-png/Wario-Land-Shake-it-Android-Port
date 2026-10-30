@@ -207,7 +207,8 @@ bool ReadHostFile(const fs::path& path, uint64_t offset, uint32_t length, std::v
 }
 
 void StartReadCachePreload() {
-#if defined(_WIN32)
+    // Every platform now preloads the disc. On Android the reads used to go through /storage/emulated
+    // (FUSE) one open per read, which showed up as 5-17 ms of disc time inside slow frames.
     constexpr uint64_t kCacheLimitBytes = 1ull << 30;  // mods can be larger than the disc; stop at 1 GiB
     std::vector<fs::path> paths;
     for (const DVDFileEntry& entry : g_fileEntries) {
@@ -216,7 +217,9 @@ void StartReadCachePreload() {
         }
     }
     std::thread([paths = std::move(paths)] {
+#if defined(_WIN32)
         ::SetThreadPriority(::GetCurrentThread(), THREAD_MODE_BACKGROUND_BEGIN);
+#endif
         const auto start = std::chrono::steady_clock::now();
         uint64_t total = 0;
         size_t files = 0;
@@ -238,14 +241,15 @@ void StartReadCachePreload() {
             total += size;
             ++files;
         }
+#if defined(_WIN32)
         ::SetThreadPriority(::GetCurrentThread(), THREAD_MODE_BACKGROUND_END);
+#endif
         RT_LOG(RT_TAG_DVD) << "read cache: " << files << " file(s), " << (total >> 20) << " MiB in "
                            << std::chrono::duration_cast<std::chrono::milliseconds>(
                                   std::chrono::steady_clock::now() - start)
                                   .count()
                            << " ms" << std::endl;
     }).detach();
-#endif
 }
 
 }  // namespace
@@ -274,8 +278,21 @@ extern "C" uint32_t g_dvdFstReservedBase;
 extern "C" uint32_t g_dvdFstReservedSize;
 
 // Byte-wise copy into guest RAM plus the DMA notification the GX caches need.
+// Whole big-endian words go through Write32 (the same fast path the translated code uses), so a read
+// costs a quarter of the calls it used to. Write32 of (b0<<24|b1<<16|b2<<8|b3) stores b0 first, so the
+// bytes land exactly as the byte-wise copy put them. Unaligned head and tail stay byte-wise.
 static void CopyToGuestAsDma(uint32_t dest, const uint8_t* data, size_t size) {
-    for (size_t i = 0; i < size; ++i) {
+    size_t i = 0;
+    while (i < size && ((dest + i) & 3u) != 0) {
+        Memory::Write8(dest + static_cast<uint32_t>(i), data[i]);
+        ++i;
+    }
+    for (; i + 4 <= size; i += 4) {
+        const uint32_t word = (static_cast<uint32_t>(data[i]) << 24) | (static_cast<uint32_t>(data[i + 1]) << 16) |
+                              (static_cast<uint32_t>(data[i + 2]) << 8) | static_cast<uint32_t>(data[i + 3]);
+        Memory::Write32(dest + static_cast<uint32_t>(i), word);
+    }
+    for (; i < size; ++i) {
         Memory::Write8(dest + static_cast<uint32_t>(i), data[i]);
     }
     GxNotifyGuestRamDmaWrite(dest, static_cast<uint32_t>(size));
