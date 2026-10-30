@@ -13,6 +13,7 @@ extern "C" void WarioIntroButtons(uint32_t hold);
 #include <chrono>
 #include <cstdio>
 #include <cstdlib>
+#include <exception>
 #include <string>
 #include <map>
 #include <mutex>
@@ -154,8 +155,23 @@ extern "C" void GX__CopyDisp_8016fc38(uint32_t da, uint32_t c) {
     }
     // GX copies are FIFO-ordered on hardware. Drain submitted draws before
     // resolving the EFB so high-level copies see the same contents.
-    GXDrawDone();
-    GXCopyDisp(GuestToHostPtr(da), (GXBool)c);
+    //
+    // Both steps can throw when the GPU staging budget overflows (aurora StagingCapacityError, or
+    // the ByteBuffer overflow that used to abort() here). Nothing above this native override catches
+    // C++ exceptions, so an uncaught throw ends the whole process. Drop only this picture instead:
+    // the guest still needs its XFB and retrace signals, exactly as in the no-frame branch above.
+    bool copied = false;
+    try {
+        // GXDrawDone drains submitted draws; GXCopyDisp resolves the EFB into the XFB source.
+        GXDrawDone();
+        GXCopyDisp(GuestToHostPtr(da), (GXBool)c);
+        copied = true;
+    } catch (const std::exception& error) {
+        static uint32_t s_skippedCopies = 0;
+        if (s_skippedCopies++ < 32) {
+            RT_LOGF(RT_TAG_GX, "display copy skipped (frame kept): %s\n", error.what());
+        }
+    }
     // No second GXDrawDone here: the frame-worker wait below is for the DONE
     // phase, which strictly subsumes the drain this call would perform.
     ++g_gxFrameCount;
@@ -166,8 +182,16 @@ extern "C" void GX__CopyDisp_8016fc38(uint32_t da, uint32_t c) {
     aurora_wait_for_frame_worker();
     settings_overlay::Draw();
     // Seal, pace to the VI retrace boundary (Aurora renders the sealed frame
-    // during the wait), and pre-warm the next frame.
-    VI_HLE_PresentFrame(/*presentedXfb=*/true, /*paceToRetrace=*/true);
+    // during the wait), and pre-warm the next frame. aurora_end_frame's batch
+    // padding is the other place that can overflow staging, so it gets the same guard.
+    try {
+        VI_HLE_PresentFrame(/*presentedXfb=*/copied, /*paceToRetrace=*/true);
+    } catch (const std::exception& error) {
+        static uint32_t s_skippedPresents = 0;
+        if (s_skippedPresents++ < 32) {
+            RT_LOGF(RT_TAG_GX, "present skipped (frame kept): %s\n", error.what());
+        }
+    }
 }
 
 PPC_NATIVE_OVERRIDE_VOID(80403B30, GX__CopyDisp_8016fc38, (uint32_t da, uint32_t c), (da, c));

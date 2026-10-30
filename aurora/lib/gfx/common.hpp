@@ -9,6 +9,7 @@
 #include <cstring>
 #include <array>
 #include <memory>
+#include <string>
 #include <type_traits>
 #include <utility>
 
@@ -207,7 +208,12 @@ private:
     }
     if (size > m_capacity) {
       if (!m_owned) {
-        abort();
+        // A borrowed view (a range of the mapped staging buffer) cannot grow. This used to call
+        // abort() silently, which surfaced on Android only as "fatal internal error" with no
+        // reason. Throw instead, so the caller can drop the frame and the log names the overflow.
+        throw aurora::gfx::StagingCapacityError(
+            "Mapped staging range overflow: need " + std::to_string(size) + " bytes, have " +
+            std::to_string(m_capacity) + " (length " + std::to_string(m_length) + ")");
       }
       // Exponential expansion to avoid O(n^2) time complexity.
       size_t capacity = size;

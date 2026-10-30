@@ -1304,6 +1304,13 @@ void AbortSignalHandler(int signum) {
     // emitted here too. It is idempotent, so a later AtExitHandler is a no-op.
     GuestFlat::LogFaultSummary();
 
+    // Name the native frame that called abort(). Without this the log only shows the guest
+    // state, which is how the GXCopyDisp crash stayed unexplained. Skipped when the abort was
+    // already reported, since that path dumps its own trace.
+    if (!g_fatalErrorReported.load(std::memory_order_acquire)) {
+        DumpHostStackTrace();
+    }
+
     ShowRuntimeFatalPopup("a fatal internal error occurred",
                           "The process called abort while running the game or Aurora renderer.\n\n"
                           "This usually means an unimplemented function, failed renderer assertion, "
