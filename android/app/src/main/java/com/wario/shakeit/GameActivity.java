@@ -52,6 +52,9 @@ public class GameActivity extends SDLActivity {
     private TouchOverlay overlay;
     private Choreographer.FrameCallback displayClock;
     private boolean displayClockOn;
+    // True while a frame callback is queued with Choreographer. Keeps onPause/onResume from queuing a
+    // second callback chain (which would call nativeSetDisplayClock twice per frame, forever).
+    private boolean displayClockPending;
 
     /**
      * Opens the picker for the game data (SetupActivity). The runtime reads the game folder once per
@@ -226,17 +229,22 @@ public class GameActivity extends SDLActivity {
             displayClock = new Choreographer.FrameCallback() {
                 @Override
                 public void doFrame(long frameTimeNanos) {
+                    displayClockPending = false;
                     if (!displayClockOn) {
                         return;
                     }
                     double hz = getWindowManager().getDefaultDisplay().getRefreshRate();
                     nativeSetDisplayClock(frameTimeNanos, hz);
+                    displayClockPending = true;
                     Choreographer.getInstance().postFrameCallback(this);
                 }
             };
         }
         displayClockOn = true;
-        Choreographer.getInstance().postFrameCallback(displayClock);
+        if (!displayClockPending) {
+            displayClockPending = true;
+            Choreographer.getInstance().postFrameCallback(displayClock);
+        }
     }
 
     @Override
