@@ -1,0 +1,2 @@
+2026-10-30 22:57:52 build started in C:\Users\HP\Documents\GitHub\Wario-Land-Shake-it-Android-Port with 11 processes (1 for translated code, RAM 7 GB)
+2026-10-30 22:57:52 ERROR: Game not found: import the disc in the launcher or pass -GameData <DATA folder>.

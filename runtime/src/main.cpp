@@ -55,6 +55,7 @@
 #endif
 #endif
 #include <unistd.h>
+#include <dlfcn.h>
 #endif
 #if defined(__ANDROID__)
 #include <sys/system_properties.h>
@@ -786,8 +787,19 @@ _Unwind_Reason_Code HostBacktraceCallback(struct _Unwind_Context* ctx, void* arg
     if (pc == 0 || st->frames >= 48) {
         return _URC_END_OF_STACK;
     }
-    std::fprintf(stderr, "[runtime]   host#%d pc=0x%llx\n", st->frames,
-                 static_cast<unsigned long long>(pc));
+    // dladdr resolves the module and the offset inside it even when the .so is stripped, so the
+    // frame can be symbolized offline with the unstripped build: llvm-addr2line -f -e <lib> <offset>.
+    Dl_info info{};
+    if (dladdr(reinterpret_cast<void*>(pc), &info) != 0 && info.dli_fname != nullptr) {
+        const uintptr_t offset = pc - reinterpret_cast<uintptr_t>(info.dli_fbase);
+        std::fprintf(stderr, "[runtime]   host#%d pc=0x%llx module=%s offset=0x%llx sym=%s\n", st->frames,
+                     static_cast<unsigned long long>(pc), info.dli_fname,
+                     static_cast<unsigned long long>(offset),
+                     info.dli_sname != nullptr ? info.dli_sname : "?");
+    } else {
+        std::fprintf(stderr, "[runtime]   host#%d pc=0x%llx\n", st->frames,
+                     static_cast<unsigned long long>(pc));
+    }
     ++st->frames;
     return _URC_NO_REASON;
 }
