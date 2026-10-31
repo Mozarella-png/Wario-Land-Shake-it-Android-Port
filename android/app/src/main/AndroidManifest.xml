@@ -32,6 +32,12 @@
             android:exported="false"
             android:screenOrientation="sensorLandscape" />
 
+        <!-- Imports an HD texture pack (.zip) from the Graphics page. It was used but never declared,
+             so opening it closed the app with ActivityNotFoundException. -->
+        <activity
+            android:name=".TexturePackActivity"
+            android:exported="false" />
+
         <!-- The game runs in its own process, so it can be restarted with another game folder. -->
         <activity
             android:name=".GameActivity"
