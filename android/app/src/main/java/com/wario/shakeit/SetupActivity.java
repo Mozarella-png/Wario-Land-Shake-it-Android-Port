@@ -349,7 +349,8 @@ public class SetupActivity extends Activity {
                 DataImporter.writeDvdRoot(configFile(this), new File(dataDir, DataImporter.DATA_FOLDER).getAbsolutePath());
                 result = null;
                 ok = true;
-            } catch (IOException e) {
+            } catch (IOException | RuntimeException e) {
+                // RuntimeException too: an unexpected failure must not kill the app from this thread.
                 result = e.getMessage() != null ? e.getMessage() : "Could not import the zip.";
             }
             final String message = result;

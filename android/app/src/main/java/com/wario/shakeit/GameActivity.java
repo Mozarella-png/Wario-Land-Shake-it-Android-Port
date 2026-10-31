@@ -72,8 +72,11 @@ public class GameActivity extends SDLActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        // Without a valid game folder the runtime would fail at boot: go back to the picker instead.
-        if (!SetupActivity.dataReady(this)) {
+        // Without the unpacked runtime or a valid game folder the runtime would fail at boot: go back
+        // to the picker instead. super.onCreate must run before returning: Activity throws
+        // SuperNotCalledException otherwise, which closed the app.
+        if (!WarioApplication.runtimeReady || !SetupActivity.dataReady(this)) {
+            super.onCreate(savedInstanceState);
             startActivity(new Intent(this, SetupActivity.class));
             finish();
             return;

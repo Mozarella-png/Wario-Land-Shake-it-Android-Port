@@ -457,7 +457,7 @@ public class LauncherActivity extends Activity {
         if (newest == null) {
             info(t("Todavía no hay registros: se crean al jugar.", "No logs yet: they are made when you play."), MUTED);
         } else {
-            info(newest.getName(), MUTED);
+            info(newest.getParentFile().getName() + "/" + newest.getName(), MUTED);
             String log = readText(newest);
             if (log.length() > 60000) {
                 log = "…\n" + log.substring(log.length() - 60000);
@@ -684,13 +684,16 @@ public class LauncherActivity extends Activity {
 
     // ---- Small helpers -----------------------------------------------------------------
 
+    /** The runtime writes one folder per run, Logs/<product>_<time>_pid<pid>/console.log. */
     private File newestLog() {
         File[] runs = new File(SetupActivity.dataDir(this), "Logs").listFiles();
         File newest = null;
         if (runs != null) {
-            for (File f : runs) {
-                if (f.isFile() && (newest == null || f.lastModified() > newest.lastModified())) {
-                    newest = f;
+            for (File run : runs) {
+                File console = new File(run, "console.log");
+                if (run.isDirectory() && console.isFile()
+                        && (newest == null || console.lastModified() > newest.lastModified())) {
+                    newest = console;
                 }
             }
         }
