@@ -95,7 +95,9 @@ uint32_t align_to(uint32_t value, uint32_t alignment) noexcept { return (value +
 
 // An internally scaled copy cannot be read back directly, so blit it down to native-resolution
 // RGBA8 first. Pushes a uniform, so it must run while the staging buffers are still mapped.
-void ensure_native_texture(PendingCopy& pending, TextureHandle* cache = nullptr) noexcept {
+// Not noexcept: push_uniform throws StagingCapacityError when the mapped staging range overflows,
+// and it runs on the frame worker, where an escaping exception calls std::terminate (SIGABRT).
+void ensure_native_texture(PendingCopy& pending, TextureHandle* cache = nullptr) {
   if (pending.texture->size.width == pending.width && pending.texture->size.height == pending.height) {
     return;
   }
@@ -393,12 +395,20 @@ void cancel() noexcept {
   g_asyncPending.clear();
 }
 
-void seal_async_downloads() noexcept {
+void seal_async_downloads() {
   {
     std::lock_guard lock{g_asyncMutex};
-    for (auto& pending : g_asyncPending) {
-      const auto it = g_asyncSlots.find(pending.dest);
-      ensure_native_texture(pending, it != g_asyncSlots.end() ? &it->second.nativeTexture : nullptr);
+    for (auto it = g_asyncPending.begin(); it != g_asyncPending.end();) {
+      const auto slot = g_asyncSlots.find(it->dest);
+      try {
+        ensure_native_texture(*it, slot != g_asyncSlots.end() ? &slot->second.nativeTexture : nullptr);
+        ++it;
+      } catch (const StagingCapacityError& error) {
+        // Staging is full for this frame. Drop only this probe readback: the guest sees a stale
+        // value for one frame instead of the whole process aborting on the worker thread.
+        Log.warn("Dropping async EFB RAM readback for this frame: {}", error.what());
+        it = g_asyncPending.erase(it);
+      }
     }
   }
   g_asyncSealed = std::move(g_asyncPending);

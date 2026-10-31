@@ -22,7 +22,8 @@ void cancel() noexcept;
 
 // Frame-latent readbacks for probe-sized CPU-consumed copies: they ride the frame's own encode and
 // land in guest RAM a frame later. Per frame, from the worker: seal, encode, then after_submit.
-void seal_async_downloads() noexcept;
+// Not noexcept: may drop readbacks on staging overflow (see seal_async_downloads in the .cpp).
+void seal_async_downloads();
 void encode_async_downloads(const wgpu::CommandEncoder& encoder) noexcept;
 void after_submit() noexcept;
 // Drops requests sealed for a frame that will never be encoded.
